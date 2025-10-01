@@ -72,14 +72,14 @@ class _HomePageState extends State<HomePage> {
     final userName = authProvider.currentUser?.name ?? 'Utilisateur';
 
     return Scaffold(
-      appBar: AppBar(
+           appBar: AppBar(
         title: Text('Bonjour $userName !'), // Titre personnalisé avec le nom
         leading: IconButton(
-          icon: Icon(Icons.menu), // Icône du menu
+        icon: Icon(Icons.menu), // Icône du menu
           onPressed: () {
-            Navigator.pushNamed(context, '/menu'); // Navigation vers le menu
-          },
-        ),
+           Navigator.pushNamed(context, '/menu'); // Navigation vers le menu
+         },
+       ),
       ),
       body: SingleChildScrollView( // Permet le défilement
         child: Column(

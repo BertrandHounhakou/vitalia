@@ -56,6 +56,75 @@ class MenuPage extends StatelessWidget {
               ],
             ),
           ),
+          
+          // Élément de menu pour la page d'accueil
+          ListTile(
+            leading: Icon(Icons.home), // Icône d'accueil
+            title: Text('Accueil'), // Texte du menu
+            onTap: () {
+              Navigator.pushReplacementNamed(context, '/home'); // Navigation vers l'accueil
+            },
+          ),
+          
+          // Élément de menu pour l'annuaire
+          ListTile(
+            leading: Icon(Icons.contacts), // Icône de contacts
+            title: Text('Annuaire'), // Texte du menu
+            onTap: () {
+              // TODO: Implémenter la page annuaire
+              Navigator.pop(context); // Fermeture du menu
+            },
+          ),
+          
+          // Élément de menu pour les rendez-vous
+          ListTile(
+            leading: Icon(Icons.calendar_today), // Icône de calendrier
+            title: Text('Mes rendez-vous'), // Texte du menu
+            onTap: () {
+              Navigator.pushNamed(context, '/appointments'); // Navigation vers les RDV
+            },
+          ),
+          
+          // Élément de menu pour le carnet de santé
+          ListTile(
+            leading: Icon(Icons.medical_services), // Icône médicale
+            title: Text('Mon carnet de santé'), // Texte du menu
+            onTap: () {
+              // TODO: Implémenter la page carnet de santé
+              Navigator.pushNamed(context, '/health-record'); // Fermeture du menu
+            },
+          ),
+          
+          // Élément de menu pour les pharmacies
+          ListTile(
+            leading: Icon(Icons.local_pharmacy), // Icône de pharmacie
+            title: Text('Les pharmacies'), // Texte du menu
+            onTap: () {
+              Navigator.pushNamed(context, '/pharmacies'); // Navigation vers les pharmacies
+            },
+          ),
+          
+          // Élément de menu pour les hôpitaux
+          ListTile(
+            leading: Icon(Icons.local_hospital), // Icône d'hôpital
+            title: Text('Les hôpitaux'), // Texte du menu
+            onTap: () {
+              Navigator.pushNamed(context, '/hospitals'); // Navigation vers les hôpitaux
+            },
+          ),
+          
+          // Élément de menu pour les assurances
+          ListTile(
+            leading: Icon(Icons.verified_user), // Icône d'assurance
+            title: Text('Les assurances'), // Texte du menu
+            onTap: () {
+              // TODO: Implémenter la page assurances
+              Navigator.pop(context); // Fermeture du menu
+            },
+          ),
+          
+          Divider(), // Séparateur
+          
           // Élément de menu pour le profil
           ListTile(
             leading: Icon(Icons.person), // Icône de profil
@@ -64,7 +133,7 @@ class MenuPage extends StatelessWidget {
               Navigator.pushNamed(context, '/profile'); // Navigation vers le profil
             },
           ),
-          Divider(), // Séparateur
+          
           // Élément de menu pour nous contacter
           ListTile(
             leading: Icon(Icons.phone), // Icône de téléphone
@@ -74,6 +143,7 @@ class MenuPage extends StatelessWidget {
               Navigator.pop(context); // Fermeture du menu
             },
           ),
+          
           // Élément de menu pour à propos
           ListTile(
             leading: Icon(Icons.info), // Icône d'information
@@ -83,6 +153,7 @@ class MenuPage extends StatelessWidget {
               Navigator.pop(context); // Fermeture du menu
             },
           ),
+          
           // Élément de menu pour mentions légales
           ListTile(
             leading: Icon(Icons.description), // Icône de document
@@ -92,7 +163,9 @@ class MenuPage extends StatelessWidget {
               Navigator.pop(context); // Fermeture du menu
             },
           ),
+          
           Divider(), // Séparateur
+          
           // Élément de menu pour se déconnecter
           ListTile(
             leading: Icon(Icons.logout), // Icône de déconnexion

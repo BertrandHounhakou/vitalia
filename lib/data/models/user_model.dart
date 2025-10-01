@@ -1,13 +1,10 @@
-// Import du package Hive pour la persistance des données
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive/hive.dart';
 
-// Annotation Hive pour générer l'adaptateur
-part 'user_model.g.dart';
+//part 'user_model.g.dart';
 
-// Annotation HiveType pour définir l'ID de type
 @HiveType(typeId: 0)
 class UserModel {
-  // Champs avec annotations HiveField pour la sérialisation
   @HiveField(0)
   final String id;
   
@@ -21,84 +18,213 @@ class UserModel {
   final String role; // 'patient', 'center', 'admin'
   
   @HiveField(4)
-  final String? profileImage; // Image de profil optionnelle
+  final String? profileImage;
   
   @HiveField(5)
-  final String? emergencyContact; // Contact d'urgence optionnel
+  final String? emergencyContact;
+  
+  @HiveField(6)
+  final String email;
+  
+  @HiveField(7)
+  final DateTime createdAt;
 
-  // Constructeur avec paramètres requis et optionnels
+  @HiveField(8)
+  final DateTime updatedAt;
+
+  // NOUVEAUX CHAMPS AJOUTÉS
+  @HiveField(9)
+  final String? firstName;
+  
+  @HiveField(10)
+  final String? lastName;
+  
+  @HiveField(11)
+  final String? address;
+  
+  @HiveField(12)
+  final DateTime? dateOfBirth;
+  
+  @HiveField(13)
+  final String? gender; // 'male', 'female', 'other'
+  
+  @HiveField(14)
+  final String? bloodType;
+  
+  @HiveField(15)
+  final String? allergies;
+  
+  @HiveField(16)
+  final String? medicalHistory;
+  
+  @HiveField(17)
+  final bool emailVerified;
+
   UserModel({
     required this.id,
     required this.name,
     required this.phone,
     required this.role,
+    required this.email,
+    required this.createdAt,
+    required this.updatedAt,
     this.profileImage,
     this.emergencyContact,
+    // NOUVEAUX CHAMPS AVEC VALEURS PAR DÉFAUT
+    this.firstName,
+    this.lastName,
+    this.address,
+    this.dateOfBirth,
+    this.gender,
+    this.bloodType,
+    this.allergies,
+    this.medicalHistory,
+    this.emailVerified = false,
   });
 
-  // Méthode pour créer un utilisateur à partir de données JSON
-  factory UserModel.fromJson(Map<String, dynamic> json) {
+  // Méthode copyWith améliorée avec tous les champs
+  UserModel copyWith({
+    String? id,
+    String? email,
+    String? name,
+    String? role,
+    String? phone,
+    String? profileImage,
+    String? emergencyContact,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? firstName,
+    String? lastName,
+    String? address,
+    DateTime? dateOfBirth,
+    String? gender,
+    String? bloodType,
+    String? allergies,
+    String? medicalHistory,
+    bool? emailVerified,
+  }) {
     return UserModel(
-      id: json['id'],
-      name: json['name'],
-      phone: json['phone'],
-      role: json['role'],
-      profileImage: json['profileImage'],
-      emergencyContact: json['emergencyContact'],
+      id: id ?? this.id,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      role: role ?? this.role,
+      phone: phone ?? this.phone,
+      profileImage: profileImage ?? this.profileImage,
+      emergencyContact: emergencyContact ?? this.emergencyContact,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      address: address ?? this.address,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      bloodType: bloodType ?? this.bloodType,
+      allergies: allergies ?? this.allergies,
+      medicalHistory: medicalHistory ?? this.medicalHistory,
+      emailVerified: emailVerified ?? this.emailVerified,
     );
   }
 
-  // Méthode pour convertir l'utilisateur en JSON
-  Map<String, dynamic> toJson() {
+  // Conversion vers Map pour Firestore avec tous les champs
+  Map<String, dynamic> toFirestore() {
     return {
       'id': id,
       'name': name,
       'phone': phone,
       'role': role,
+      'email': email,
       'profileImage': profileImage,
       'emergencyContact': emergencyContact,
+      'firstName': firstName,
+      'lastName': lastName,
+      'address': address,
+      'dateOfBirth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
+      'gender': gender,
+      'bloodType': bloodType,
+      'allergies': allergies,
+      'medicalHistory': medicalHistory,
+      'emailVerified': emailVerified,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.now(),
     };
   }
 
-  // Méthode pour copier l'utilisateur avec de nouvelles valeurs
-  UserModel copyWith({
-    String? id,
-    String? name,
-    String? phone,
-    String? role,
-    String? profileImage,
-    String? emergencyContact,
-  }) {
+  // Création à partir d'un document Firestore avec tous les champs
+  factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return UserModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      phone: phone ?? this.phone,
-      role: role ?? this.role,
-      profileImage: profileImage ?? this.profileImage,
-      emergencyContact: emergencyContact ?? this.emergencyContact,
+      id: data['id'] ?? doc.id,
+      name: data['name'] ?? '',
+      phone: data['phone'] ?? '',
+      role: data['role'] ?? 'patient',
+      email: data['email'] ?? '',
+      profileImage: data['profileImage'],
+      emergencyContact: data['emergencyContact'],
+      firstName: data['firstName'],
+      lastName: data['lastName'],
+      address: data['address'],
+      dateOfBirth: data['dateOfBirth'] != null ? (data['dateOfBirth'] as Timestamp).toDate() : null,
+      gender: data['gender'],
+      bloodType: data['bloodType'],
+      allergies: data['allergies'],
+      medicalHistory: data['medicalHistory'],
+      emailVerified: data['emailVerified'] ?? false,
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
   }
 
-  // Surcharge de l'opérateur == pour comparer les utilisateurs
+  // Méthode pour mettre à jour avec tous les champs
+  Map<String, dynamic> toUpdate() {
+    return {
+      'name': name,
+      'phone': phone,
+      'profileImage': profileImage,
+      'emergencyContact': emergencyContact,
+      'firstName': firstName,
+      'lastName': lastName,
+      'address': address,
+      'dateOfBirth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
+      'gender': gender,
+      'bloodType': bloodType,
+      'allergies': allergies,
+      'medicalHistory': medicalHistory,
+      'emailVerified': emailVerified,
+      'updatedAt': Timestamp.now(),
+    };
+  }
+
+  // Getters pratiques
+  String get fullName => name;
+  String get displayName => firstName != null ? '$firstName ${lastName ?? ""}'.trim() : name;
+  
+  bool get isPatient => role == 'patient';
+  bool get isCenter => role == 'center';
+  bool get isAdmin => role == 'admin';
+
+  // Méthode pour obtenir l'âge (si dateOfBirth est disponible)
+  int? get age {
+    if (dateOfBirth == null) return null;
+    final now = DateTime.now();
+    int age = now.year - dateOfBirth!.year;
+    if (now.month < dateOfBirth!.month || 
+        (now.month == dateOfBirth!.month && now.day < dateOfBirth!.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  @override
+  String toString() {
+    return 'UserModel(id: $id, name: $name, email: $email, role: $role)';
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is UserModel &&
-        other.id == id &&
-        other.name == name &&
-        other.phone == phone &&
-        other.role == role;
+    return other is UserModel && other.id == id;
   }
 
-  // Surcharge de hashCode pour la cohérence avec ==
   @override
-  int get hashCode {
-    return Object.hash(id, name, phone, role);
-  }
-
-  // Surcharge de toString pour le débogage
-  @override
-  String toString() {
-    return 'UserModel(id: $id, name: $name, phone: $phone, role: $role)';
-  }
+  int get hashCode => id.hashCode;
 }

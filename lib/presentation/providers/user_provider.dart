@@ -1,6 +1,7 @@
 // Import des packages Flutter et des services
 import 'package:flutter/foundation.dart';
-import 'package:vitalia/core/services/user_service.dart';
+//import 'package:vitalia/core/services/firebase_user_service.dart';
+import 'package:vitalia/core/services/user_service_interface.dart';
 import 'package:vitalia/data/models/user_model.dart';
 
 // Provider pour la gestion des utilisateurs

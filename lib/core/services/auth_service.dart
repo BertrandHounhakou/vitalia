@@ -1,4 +1,4 @@
-// Import des packages nécessaires
+/*/ Import des packages nécessaires
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vitalia/data/models/user_model.dart';
@@ -69,4 +69,4 @@ class AuthService {
       role: role,
     );
   }
-}
+}*/

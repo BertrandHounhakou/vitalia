@@ -1,18 +1,17 @@
-// Import des packages Flutter
+// Import des packages Flutter nécessaires
 import 'package:flutter/material.dart';
-import 'package:vitalia/presentation/widgets/insurance_card.dart';
 
-// Classe pour la page des assurances avec état
-class InsurancePage extends StatefulWidget {
-  const InsurancePage({Key? key}) : super(key: key);
+// Classe pour la page détaillée de gestion des assurances
+class InsuranceDetailPage extends StatefulWidget {
+  const InsuranceDetailPage({Key? key}) : super(key: key);
 
-  // Création de l'état de la page des assurances
+  // Création de l'état de la page
   @override
-  _InsurancePageState createState() => _InsurancePageState();
+  _InsuranceDetailPageState createState() => _InsuranceDetailPageState();
 }
 
-// État de la page des assurances
-class _InsurancePageState extends State<InsurancePage> {
+// État de la page détaillée des assurances
+class _InsuranceDetailPageState extends State<InsuranceDetailPage> {
   // Liste des assurances de l'utilisateur
   final List<Map<String, dynamic>> _insurances = [];
   
@@ -51,37 +50,74 @@ class _InsurancePageState extends State<InsurancePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Gestion des Assurances'), // Titre de la page
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back), // Icône de retour
+          onPressed: () {
+            Navigator.pop(context); // Retour à la page précédente
+          },
+        ),
+      ),
       body: _isLoading // Affichage conditionnel pendant le chargement
           ? Center(child: CircularProgressIndicator()) // Indicateur de chargement
           : _insurances.isEmpty // Si aucune assurance
               ? Center( // Affichage centré pour état vide
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center, // Centrage vertical
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon( // Icône d'assurance
-                        Icons.verified_user, // Icône de vérification/utilisateur
-                        size: 64, // Taille de l'icône
-                        color: Colors.grey, // Couleur grise
+                        Icons.verified_user,
+                        size: 64,
+                        color: Colors.grey,
                       ),
-                      SizedBox(height: 16), // Espacement
+                      SizedBox(height: 16),
                       Text(
                         'Aucune donnée disponible.', // Message d'absence d'assurance
-                        style: TextStyle(color: Colors.grey), // Style gris
+                        style: TextStyle(color: Colors.grey),
                       ),
                     ],
                   ),
                 )
               : ListView.builder( // Liste des assurances si existantes
-                  itemCount: _insurances.length, // Nombre d'assurances
+                  itemCount: _insurances.length,
                   itemBuilder: (context, index) {
-                    final insurance = _insurances[index]; // Assurance courante
-                    return InsuranceCard(insurance: insurance); // Carte d'assurance
+                    final insurance = _insurances[index];
+                    return _buildInsuranceCard(insurance); // Carte d'assurance
                   },
                 ),
       floatingActionButton: FloatingActionButton( // Bouton flottant d'ajout
         onPressed: _showAddInsuranceDialog, // Ouverture de la dialog d'ajout
         child: Icon(Icons.add), // Icône d'ajout
         tooltip: 'Ajouter une assurance', // Info-bulle
+      ),
+    );
+  }
+
+  // Méthode pour construire une carte d'assurance
+  Widget _buildInsuranceCard(Map<String, dynamic> insurance) {
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ListTile(
+        contentPadding: EdgeInsets.all(16),
+        leading: Icon(Icons.verified_user, size: 40, color: Colors.purple),
+        title: Text(
+          insurance['name'], // Nom de l'assurance
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 8),
+            if (insurance['startDate'] != null && insurance['endDate'] != null)
+              Text('Valide du ${insurance['startDate']} au ${insurance['endDate']}'),
+          ],
+        ),
+        trailing: Icon(Icons.arrow_forward_ios), // Icône de navigation
+        onTap: () {
+          // TODO: Implémenter la navigation vers les détails de l'assurance
+          print('Assurance sélectionnée: ${insurance['name']}');
+        },
       ),
     );
   }
@@ -139,7 +175,7 @@ class _InsurancePageState extends State<InsurancePage> {
             mainAxisSize: MainAxisSize.min, // Taille minimale
             children: [
               Text('Validité de l\'assurance'), // Sous-titre
-              SizedBox(height: 16), // Espacement
+              SizedBox(height: 16),
               
               // Champ pour la date de début
               TextFormField(
@@ -153,7 +189,7 @@ class _InsurancePageState extends State<InsurancePage> {
                 ),
                 readOnly: true, // Lecture seule pour ouvrir le sélecteur
               ),
-              SizedBox(height: 16), // Espacement
+              SizedBox(height: 16),
               
               // Champ pour la date de fin
               TextFormField(

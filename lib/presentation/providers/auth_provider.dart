@@ -1,98 +1,119 @@
-// Import des packages Flutter et des services
 import 'package:flutter/foundation.dart';
-import 'package:vitalia/core/services/auth_service.dart';
+import 'package:vitalia/core/services/firebase_auth.dart';
 import 'package:vitalia/data/models/user_model.dart';
 
-// Provider pour la gestion de l'état d'authentification
 class AuthProvider with ChangeNotifier {
-  // Instance du service d'authentification
-  final AuthService _authService;
+  final FirebaseAuthService _authService;
   
-  // Utilisateur courant
   UserModel? _currentUser;
-  
-  // Indicateur de chargement
   bool _isLoading = false;
-  
-  // Message d'erreur
   String? _error;
 
-  // Constructeur avec injection du service
   AuthProvider(this._authService);
 
-  // Getter pour l'utilisateur courant
   UserModel? get currentUser => _currentUser;
-  
-  // Getter pour l'état de chargement
   bool get isLoading => _isLoading;
-  
-  // Getter pour l'erreur
   String? get error => _error;
-  
-  // Getter pour le rôle utilisateur
-  String? get userRole => _currentUser?.role;
 
-  // Méthode pour vérifier si l'utilisateur est connecté
-  Future<bool> checkIfLoggedIn() async {
-    _isLoading = true;
-    notifyListeners();
-    
-    try {
-      final isLoggedIn = await _authService.isLoggedIn();
-      if (isLoggedIn) {
-        _currentUser = await _authService.getCurrentUser();
-      }
-      _error = null;
-      return isLoggedIn;
-    } catch (e) {
-      _error = 'Erreur de vérification de connexion: $e';
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // Méthode de connexion
-  Future<void> login(String userType, String phone, String password, {String? id}) async {
+  // Inscription avec gestion d'erreur améliorée
+  Future<void> signUp(UserModel user, String password) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Création d'un utilisateur factice pour la démo
-      _currentUser = UserModel(
-        id: id ?? 'demo_${DateTime.now().millisecondsSinceEpoch}',
-        name: userType == 'patient' ? 'Patient Demo' : 
-              userType == 'center' ? 'Centre Demo' : 'Admin Demo',
-        phone: phone,
-        role: userType,
-        emergencyContact: '+229 00000000',
-      );
+      print('🔄 AuthProvider: Début de l\'inscription pour ${user.email}');
       
-      // Appel du service de connexion
-      await _authService.login(_currentUser!, password);
+      _currentUser = await _authService.signUp(user, password);
       _error = null;
+      
+      print('✅ AuthProvider: Inscription réussie pour ${user.email}');
+      
     } catch (e) {
-      _error = 'Échec de la connexion: $e';
-      rethrow;
+      print('❌ AuthProvider: Erreur d\'inscription: $e');
+      
+      // Gestion détaillée des erreurs Firebase
+      String errorMessage = 'Erreur lors de la création du compte';
+      
+      if (e.toString().contains('email-already-in-use')) {
+        errorMessage = 'Cette adresse email est déjà utilisée';
+      } else if (e.toString().contains('weak-password')) {
+        errorMessage = 'Le mot de passe est trop faible (minimum 6 caractères)';
+      } else if (e.toString().contains('invalid-email')) {
+        errorMessage = 'Adresse email invalide';
+      } else if (e.toString().contains('network-request-failed')) {
+        errorMessage = 'Problème de connexion internet';
+      } else if (e.toString().contains('too-many-requests')) {
+        errorMessage = 'Trop de tentatives. Réessayez plus tard';
+      } else {
+        errorMessage = 'Erreur d\'inscription: ${e.toString()}';
+      }
+      
+      _error = errorMessage;
+      rethrow; // Important pour que register_page.dart puisse aussi capturer l'erreur
+      
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  // Méthode de déconnexion
-  Future<void> logout() async {
+  // Connexion avec gestion d'erreur améliorée
+  Future<void> signIn(String email, String password) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      print('🔄 AuthProvider: Tentative de connexion pour $email');
+      
+      _currentUser = await _authService.signIn(email, password);
+      _error = null;
+      
+      print('✅ AuthProvider: Connexion réussie pour $email');
+      
+    } catch (e) {
+      print('❌ AuthProvider: Erreur de connexion: $e');
+      
+      // Gestion détaillée des erreurs Firebase
+      String errorMessage = 'Erreur de connexion';
+      
+      if (e.toString().contains('user-not-found')) {
+        errorMessage = 'Aucun compte trouvé avec cet email';
+      } else if (e.toString().contains('wrong-password')) {
+        errorMessage = 'Mot de passe incorrect';
+      } else if (e.toString().contains('invalid-email')) {
+        errorMessage = 'Adresse email invalide';
+      } else if (e.toString().contains('network-request-failed')) {
+        errorMessage = 'Problème de connexion internet';
+      } else if (e.toString().contains('too-many-requests')) {
+        errorMessage = 'Trop de tentatives. Réessayez plus tard';
+      } else if (e.toString().contains('user-disabled')) {
+        errorMessage = 'Ce compte a été désactivé';
+      } else {
+        errorMessage = 'Erreur de connexion: ${e.toString()}';
+      }
+      
+      _error = errorMessage;
+      rethrow;
+      
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Déconnexion
+  Future<void> signOut() async {
     _isLoading = true;
     notifyListeners();
-    
+
     try {
-      await _authService.logout();
+      await _authService.signOut();
       _currentUser = null;
       _error = null;
     } catch (e) {
-      _error = 'Erreur lors de la déconnexion: $e';
+      _error = 'Erreur de déconnexion: $e';
       rethrow;
     } finally {
       _isLoading = false;
@@ -100,9 +121,50 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Méthode pour effacer les erreurs
+  // Méthode logout (alias de signOut pour cohérence)
+  Future<void> logout() async {
+    try {
+      await _authService.signOut();
+      _currentUser = null;
+      _error = null;
+      notifyListeners();
+    } catch (e) {
+      _error = 'Erreur lors de la déconnexion: $e';
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Vérifier la connexion
+  Future<bool> checkAuthStatus() async {
+    try {
+      if (_authService.isLoggedIn && _currentUser == null) {
+        _currentUser = await _authService.getCurrentUser();
+        notifyListeners();
+        return true;
+      }
+      return _authService.isLoggedIn;
+    } catch (e) {
+      print('❌ AuthProvider: Erreur vérification statut: $e');
+      return false;
+    }
+  }
+
+  // Effacer les erreurs
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  // Mettre à jour le profil utilisateur
+  Future<void> updateUserProfile(UserModel updatedUser) async {
+    try {
+      // Implémentez la mise à jour du profil si nécessaire
+      _currentUser = updatedUser;
+      notifyListeners();
+    } catch (e) {
+      _error = 'Erreur mise à jour profil: $e';
+      rethrow;
+    }
   }
 }

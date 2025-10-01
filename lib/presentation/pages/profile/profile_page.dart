@@ -1,8 +1,9 @@
 // Import des packages Flutter
 import 'package:flutter/material.dart';
+import 'package:vitalia/presentation/pages/insurances/insurances.dart';
+import 'package:vitalia/presentation/pages/profile/insurance_detail_page.dart';
 import 'personal_info_page.dart';
 import 'medical_constants_page.dart';
-import 'insurance_page.dart';
 
 // Classe pour la page principale du profil avec onglets
 class ProfilePage extends StatefulWidget {
@@ -52,7 +53,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
         children: [
           PersonalInfoPage(), // Page des informations personnelles
           MedicalConstantsPage(), // Page des constantes médicales
-          InsurancePage(), // Page des assurances
+          InsuranceDetailPage(), // Page des assurances
         ],
       ),
     );

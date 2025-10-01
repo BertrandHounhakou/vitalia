@@ -1,4 +1,4 @@
-// Import des modèles de données
+/*// Import des modèles de données
 import 'package:vitalia/data/models/user_model.dart';
 
 // Service de gestion des utilisateurs
@@ -64,4 +64,4 @@ class UserService {
       user.phone.contains(query)
     ).toList();
   }
-}
+}*/

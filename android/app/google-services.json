@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "121150012417",
+    "project_id": "vitalia-health",
+    "storage_bucket": "vitalia-health.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:121150012417:android:3510c332cde0838caf1400",
+        "android_client_info": {
+          "package_name": "com.example.vitalia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDonImLxMIiWF72UnwRnH77GN2uFoapS0Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
