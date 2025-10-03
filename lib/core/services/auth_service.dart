@@ -1,72 +1,93 @@
-/*/ Import des packages nécessaires
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:vitalia/data/models/user_model.dart';
 
-// Service d'authentification pour gérer la connexion/déconnexion
 class AuthService {
-  // Stockage sécurisé pour les données sensibles
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  
-  // Préférences partagées pour le stockage simple
-  final SharedPreferences _prefs;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Constructeur avec injection des préférences
-  AuthService(this._prefs);
+  // Méthode de connexion complète
+  Future<UserModel> signIn(String email, String password) async {
+    try {
+      print('Tentative de connexion pour: $email');
+      
+      // 1. Connexion Firebase Auth
+      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-  // Méthode de connexion utilisateur
-  Future<void> login(UserModel user, String password) async {
-    // Simulation d'appel API - À remplacer par un vrai appel
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Stockage des informations utilisateur
-    await _prefs.setString('user_id', user.id);
-    await _prefs.setString('user_name', user.name);
-    await _prefs.setString('user_role', user.role);
-    
-    // Stockage sécurisé du token (simulé)
-    await _secureStorage.write(key: 'auth_token', value: 'simulated_token_${user.id}');
+      final User? user = userCredential.user;
+      if (user == null) {
+        throw Exception('Utilisateur non trouvé');
+      }
+
+      print('Utilisateur Firebase connecté: ${user.uid}');
+
+      // 2. Vérification email
+      if (!user.emailVerified) {
+        await _auth.signOut();
+        throw Exception('Veuillez vérifier votre email avant de vous connecter');
+      }
+
+      // 3. Récupération des données utilisateur depuis Firestore
+      final DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+      print('Document Firestore existe: ${userDoc.exists}');
+
+      if (!userDoc.exists) {
+        throw Exception('Aucun compte ne correspond à ces identifiants');
+      }
+
+      // 4. Conversion en UserModel avec fromFirestore
+      final UserModel userModel = UserModel.fromFirestore(userDoc);
+      
+      print('Utilisateur final: ${userModel.name} - ${userModel.email} - ${userModel.role}');
+      
+      return userModel;
+
+    } on FirebaseAuthException catch (e) {
+      print('Erreur Firebase: ${e.code} - ${e.message}');
+      throw Exception(_getFirebaseErrorMessage(e.code));
+    } catch (e) {
+      print('Erreur générale: $e');
+      rethrow;
+    }
   }
 
-  // Méthode de déconnexion
-  Future<void> logout() async {
-    // Suppression de toutes les données d'authentification
-    await _prefs.remove('user_id');
-    await _prefs.remove('user_name');
-    await _prefs.remove('user_role');
-    await _secureStorage.delete(key: 'auth_token');
+  String _getFirebaseErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'user-not-found':
+        return 'Aucun compte ne correspond à cet email';
+      case 'wrong-password':
+        return 'Mot de passe incorrect';
+      case 'invalid-email':
+        return 'Adresse email invalide';
+      case 'user-disabled':
+        return 'Ce compte a été désactivé';
+      case 'too-many-requests':
+        return 'Trop de tentatives. Réessayez plus tard';
+      case 'network-request-failed':
+        return 'Erreur de connexion réseau';
+      default:
+        return 'Erreur de connexion. Veuillez réessayer';
+    }
   }
 
-  // Vérification si l'utilisateur est connecté
-  Future<bool> isLoggedIn() async {
-    final String? userId = await _prefs.getString('user_id');
-    final String? token = await _secureStorage.read(key: 'auth_token');
-    return userId != null && token != null;
+  // Réinitialisation mot de passe
+  Future<void> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  // Récupération de l'ID utilisateur connecté
-  Future<String?> getUserId() async {
-    return await _prefs.getString('user_id');
+  // Déconnexion
+  Future<void> signOut() async {
+    await _auth.signOut();
   }
 
-  // Récupération du rôle utilisateur
-  Future<String?> getUserRole() async {
-    return await _prefs.getString('user_role');
-  }
-
-  // Récupération des informations utilisateur
-  Future<UserModel?> getCurrentUser() async {
-    final String? id = await _prefs.getString('user_id');
-    final String? name = await _prefs.getString('user_name');
-    final String? role = await _prefs.getString('user_role');
-    
-    if (id == null || name == null || role == null) return null;
-    
-    return UserModel(
-      id: id,
-      name: name,
-      phone: '', // À récupérer depuis une source de données
-      role: role,
-    );
-  }
-}*/
+  // Vérifier si l'utilisateur est connecté
+  Stream<User?> get userStream => _auth.authStateChanges();
+}

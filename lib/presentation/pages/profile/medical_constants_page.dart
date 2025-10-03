@@ -1,5 +1,8 @@
 // Import des packages Flutter
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:vitalia/presentation/providers/auth_provider.dart';
+//import 'package:vitalia/data/models/user_model.dart';
 
 // Classe pour la page des constantes médicales avec état
 class MedicalConstantsPage extends StatefulWidget {
@@ -20,227 +23,371 @@ class _MedicalConstantsPageState extends State<MedicalConstantsPage> {
     'glycemia': TextEditingController(), // Glycémie
     'electrophoresis': TextEditingController(), // Électrophorèse
     'bmi': TextEditingController(), // IMC
+    'allergies': TextEditingController(), // Allergies/Pathologies
+    'emergencyContact': TextEditingController(), // Contact d'urgence
   };
 
-  // Liste des allergies/pathologies
-  final List<Map<String, dynamic>> _allergies = [];
-  
-  // Liste des contacts d'urgence
-  final List<Map<String, dynamic>> _emergencyContacts = [];
+  bool _isLoading = false;
 
-  // Construction de l'interface de la page
+  @override
+  void initState() {
+    super.initState();
+    _loadMedicalData();
+  }
+
+  // Charger les données médicales de l'utilisateur
+  void _loadMedicalData() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.currentUser;
+    
+    if (user != null) {
+      setState(() {
+        _controllers['bloodGroup']!.text = user.bloodType ?? '';
+        _controllers['height']!.text = '';
+        _controllers['weight']!.text = '';
+        _controllers['glycemia']!.text = '';
+        _controllers['electrophoresis']!.text = '';
+        _controllers['bmi']!.text = '';
+        _controllers['allergies']!.text = user.allergies ?? '';
+        _controllers['emergencyContact']!.text = user.emergencyContact ?? '';
+      });
+    }
+  }
+
+  // Calcul automatique de l'IMC
+  void _calculateBMI() {
+    final heightText = _controllers['height']!.text;
+    final weightText = _controllers['weight']!.text;
+    
+    if (heightText.isNotEmpty && weightText.isNotEmpty) {
+      try {
+        final height = double.parse(heightText) / 100; // Conversion en mètres
+        final weight = double.parse(weightText);
+        
+        if (height > 0 && weight > 0) {
+          final bmi = weight / (height * height);
+          _controllers['bmi']!.text = bmi.toStringAsFixed(1);
+        }
+      } catch (e) {
+        // Gestion d'erreur silencieuse
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView( // Permet le défilement
-      padding: EdgeInsets.all(16.0), // Padding interne
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch, // Alignement étiré
-        children: [
-          // Champ pour le groupe sanguin
-          _buildConstantField('Groupe sanguin', 'bloodGroup', 'Ex: O+'),
-          SizedBox(height: 16), // Espacement
-          
-          // Champ pour la taille
-          _buildConstantField('Taille (cm)', 'height', 'Ex: 175'),
-          SizedBox(height: 16), // Espacement
-          
-          // Champ pour le poids
-          _buildConstantField('Poids (kg)', 'weight', 'Ex: 70'),
-          SizedBox(height: 16), // Espacement
-          
-          // Champ pour la glycémie
-          _buildConstantField('Glycémie', 'glycemia', 'Ex: 1.0 g/L'),
-          SizedBox(height: 16), // Espacement
-          
-          // Champ pour l'électrophorèse
-          _buildConstantField('Electrophorèse', 'electrophoresis', 'Ex: AA'),
-          SizedBox(height: 16), // Espacement
-          
-          // Champ pour l'IMC (calcul automatique)
-          _buildConstantField('IMC', 'bmi', 'Calcul automatique'),
-          
-          Divider(height: 40), // Séparateur
-          
-          // Section des allergies/pathologies
-          Text(
-            'Allergies/Pathologies', // Titre de section
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Style du titre
-          ),
-          SizedBox(height: 16), // Espacement
-          
-          // Message si aucune allergie définie
-          if (_allergies.isEmpty)
-            Text(
-              'Aucune Pathologie définie', // Message d'absence
-              style: TextStyle(color: Colors.grey), // Style gris
-            ),
-          
-          SizedBox(height: 16), // Espacement
-          
-          // Bouton pour ajouter une allergie/pathologie
-          ElevatedButton.icon(
-            onPressed: _addAllergy, // Ajout d'allergie
-            icon: Icon(Icons.add), // Icône d'ajout
-            label: Text('Ajouter une allergie/pathologie'), // Texte du bouton
-          ),
-          
-          Divider(height: 40), // Séparateur
-          
-          // Section des numéros d'urgence
-          Text(
-            'Numéros d\'urgence', // Titre de section
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), // Style du titre
-          ),
-          SizedBox(height: 16), // Espacement
-          
-          // Message si aucun contact d'urgence défini
-          if (_emergencyContacts.isEmpty)
-            Text(
-              'Aucun numéro d\'urgence défini', // Message d'absence
-              style: TextStyle(color: Colors.grey), // Style gris
-            ),
-          
-          SizedBox(height: 16), // Espacement
-          
-          // Bouton pour ajouter un contact d'urgence
-          ElevatedButton.icon(
-            onPressed: _addEmergencyContact, // Ajout de contact
-            icon: Icon(Icons.add), // Icône d'ajout
-            label: Text('Ajouter un contact d\'urgence'), // Texte du bouton
-          ),
-          
-          SizedBox(height: 24), // Espacement
-          
-          // Bouton de sauvegarde
-          ElevatedButton(
-            onPressed: _saveConstants, // Sauvegarde des constantes
-            child: Text('ENREGISTRER'), // Texte du bouton
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 16), // Padding vertical
-            ),
-          ),
-        ],
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Constantes Médicales'),
+        backgroundColor: Color(0xFF2A7FDE),
+        foregroundColor: Colors.white,
       ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Carte d'information utilisateur
+                  if (user != null) ...[
+                    Card(
+                      elevation: 2,
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: Color(0xFF2A7FDE),
+                              child: Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              user.name,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            if (user.bloodType != null && user.bloodType!.isNotEmpty)
+                              Chip(
+                                label: Text(
+                                  'Groupe sanguin: ${user.bloodType}',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                  ],
+
+                  // Section des constantes médicales
+                  Text(
+                    'Constantes Médicales',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 16),
+
+                  // Champ pour le groupe sanguin
+                  _buildConstantField('Groupe sanguin', 'bloodGroup', 'Ex: O+, A-, B+', Icons.bloodtype),
+                  SizedBox(height: 16),
+                  
+                  // Ligne pour taille et poids
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildConstantField('Taille (cm)', 'height', 'Ex: 175', Icons.height),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: _buildConstantField('Poids (kg)', 'weight', 'Ex: 70', Icons.monitor_weight),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  
+                  // Bouton pour calculer l'IMC
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: _calculateBMI,
+                      icon: Icon(Icons.calculate, size: 16),
+                      label: Text('Calculer IMC'),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  
+                  // Champ pour l'IMC (calcul automatique)
+                  _buildConstantField('IMC (Indice de Masse Corporelle)', 'bmi', 'Calcul automatique', Icons.calculate, readOnly: true),
+                  SizedBox(height: 16),
+                  
+                  // Champ pour la glycémie
+                  _buildConstantField('Glycémie (g/L)', 'glycemia', 'Ex: 1.0', Icons.monitor_heart),
+                  SizedBox(height: 16),
+                  
+                  // Champ pour l'électrophorèse
+                  _buildConstantField('Électrophorèse de l\'hémoglobine', 'electrophoresis', 'Ex: AA, AS, SC', Icons.science),
+                  SizedBox(height: 16),
+                  
+                  Divider(height: 40),
+                  
+                  // Section des allergies/pathologies
+                  Text(
+                    'Allergies & Pathologies',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Listez vos allergies, maladies chroniques ou conditions médicales',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  SizedBox(height: 16),
+                  
+                  TextFormField(
+                    controller: _controllers['allergies'],
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: 'Allergies et Pathologies',
+                      hintText: 'Ex: Allergie aux pénicillines, Asthme, Diabète type 2, Hypertension...',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.health_and_safety),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  
+                  Divider(height: 40),
+                  
+                  // Section des contacts d'urgence
+                  Text(
+                    'Contact d\'Urgence',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Personne à contacter en cas d\'urgence médicale',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  SizedBox(height: 16),
+                  
+                  // Affichage du contact d'urgence existant
+                  if (user?.emergencyContact != null && user!.emergencyContact!.isNotEmpty) ...[
+                    Card(
+                      color: Colors.orange[50],
+                      child: ListTile(
+                        leading: Icon(Icons.emergency, color: Colors.orange),
+                        title: Text('Contact actuel'),
+                        subtitle: Text(user.emergencyContact!),
+                        trailing: IconButton(
+                          icon: Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () {
+                            _controllers['emergencyContact']!.text = user.emergencyContact!;
+                          },
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                  ],
+                  
+                  TextFormField(
+                    controller: _controllers['emergencyContact'],
+                    decoration: InputDecoration(
+                      labelText: 'Nouveau contact d\'urgence',
+                      hintText: 'Numéro de téléphone avec indicatif pays',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.contact_emergency),
+                    ),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Format: +229 XX XX XX XX',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  
+                  SizedBox(height: 32),
+                  
+                  // Bouton de sauvegarde
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _saveMedicalConstants,
+                    child: _isLoading
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text('ENREGISTRER LES CONSTANTES MÉDICALES'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF2A7FDE),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                ],
+              ),
+            ),
     );
   }
 
   // Méthode pour construire un champ de constante
-  Widget _buildConstantField(String label, String key, String hint) {
+  Widget _buildConstantField(String label, String key, String hint, IconData icon, {bool readOnly = false}) {
     return TextFormField(
-      controller: _controllers[key], // Contrôleur du champ
+      controller: _controllers[key],
       decoration: InputDecoration(
-        labelText: label, // Label du champ
-        hintText: hint, // Texte d'indication
-        border: OutlineInputBorder(), // Bordure avec outline
+        labelText: label,
+        hintText: hint,
+        border: OutlineInputBorder(),
+        prefixIcon: Icon(icon),
       ),
-      keyboardType: key == 'height' || key == 'weight' || key == 'bmi' 
-          ? TextInputType.number // Clavier numérique pour les nombres
-          : TextInputType.text, // Clavier texte pour les autres
-    );
-  }
-
-  // Méthode pour ajouter une allergie/pathologie
-  void _addAllergy() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final TextEditingController allergyController = TextEditingController();
-        return AlertDialog(
-          title: Text('Ajouter une allergie/pathologie'), // Titre de la dialog
-          content: TextField(
-            controller: allergyController,
-            decoration: InputDecoration(
-              hintText: 'Nom de l\'allergie/pathologie', // Indication
-            ),
-          ),
-          actions: [
-            // Bouton d'annulation
-            TextButton(
-              onPressed: () => Navigator.pop(context), // Fermeture de la dialog
-              child: Text('Annuler'), // Texte d'annulation
-            ),
-            // Bouton d'ajout
-            TextButton(
-              onPressed: () {
-                if (allergyController.text.isNotEmpty) { // Validation
-                  setState(() {
-                    _allergies.add({'name': allergyController.text}); // Ajout à la liste
-                  });
-                  Navigator.pop(context); // Fermeture de la dialog
-                }
-              },
-              child: Text('Ajouter'), // Texte d'ajout
-            ),
-          ],
-        );
+      keyboardType: key == 'height' || key == 'weight' || key == 'bmi' || key == 'glycemia'
+          ? TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      readOnly: readOnly,
+      onChanged: (value) {
+        if (key == 'height' || key == 'weight') {
+          _calculateBMI();
+        }
       },
     );
   }
 
-  // Méthode pour ajouter un contact d'urgence
-  void _addEmergencyContact() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final TextEditingController nameController = TextEditingController();
-        final TextEditingController phoneController = TextEditingController();
-        return AlertDialog(
-          title: Text('Ajouter un contact d\'urgence'), // Titre de la dialog
-          content: Column(
-            mainAxisSize: MainAxisSize.min, // Taille minimale
-            children: [
-              // Champ pour le nom
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Nom complet', // Label du champ
-                ),
-              ),
-              SizedBox(height: 16), // Espacement
-              
-              // Champ pour le téléphone
-              TextField(
-                controller: phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Numéro de téléphone', // Label du champ
-                ),
-                keyboardType: TextInputType.phone, // Clavier téléphone
-              ),
-            ],
-          ),
-          actions: [
-            // Bouton d'annulation
-            TextButton(
-              onPressed: () => Navigator.pop(context), // Fermeture de la dialog
-              child: Text('Annuler'), // Texte d'annulation
-            ),
-            // Bouton d'ajout
-            TextButton(
-              onPressed: () {
-                // Validation des champs
-                if (nameController.text.isNotEmpty && phoneController.text.isNotEmpty) {
-                  setState(() {
-                    _emergencyContacts.add({
-                      'name': nameController.text, // Nom du contact
-                      'phone': phoneController.text, // Téléphone du contact
-                    });
-                  });
-                  Navigator.pop(context); // Fermeture de la dialog
-                }
-              },
-              child: Text('Ajouter'), // Texte d'ajout
-            ),
-          ],
+  // Méthode pour sauvegarder les constantes médicales DANS FIRESTORE
+  Future<void> _saveMedicalConstants() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final currentUser = authProvider.currentUser;
+
+      if (currentUser != null) {
+        // Créer l'utilisateur mis à jour avec les constantes médicales
+        final updatedUser = currentUser.copyWith(
+          bloodType: _controllers['bloodGroup']!.text.isNotEmpty ? _controllers['bloodGroup']!.text : null,
+          allergies: _controllers['allergies']!.text.isNotEmpty ? _controllers['allergies']!.text : null,
+          emergencyContact: _controllers['emergencyContact']!.text.isNotEmpty ? _controllers['emergencyContact']!.text : null,
+          updatedAt: DateTime.now(),
+          // Stocker les autres constantes dans medicalHistory
+          medicalHistory: _buildMedicalHistoryString(),
         );
-      },
-    );
+
+        // SAUVEGARDE RÉELLE DANS FIRESTORE
+        await authProvider.updateUserProfile(updatedUser);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Constantes médicales sauvegardées avec succès !'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        // Recharger les données
+        _loadMedicalData();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la sauvegarde: $e'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
-  // Méthode pour sauvegarder les constantes médicales
-  void _saveConstants() {
-    // TODO: Sauvegarder les constantes médicales
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Constantes médicales sauvegardées')), // Message de succès
-    );
+  // Construire une chaîne avec toutes les constantes médicales
+  String _buildMedicalHistoryString() {
+    final constants = <String>[];
+    
+    if (_controllers['height']!.text.isNotEmpty) {
+      constants.add('Taille: ${_controllers['height']!.text} cm');
+    }
+    if (_controllers['weight']!.text.isNotEmpty) {
+      constants.add('Poids: ${_controllers['weight']!.text} kg');
+    }
+    if (_controllers['bmi']!.text.isNotEmpty) {
+      constants.add('IMC: ${_controllers['bmi']!.text}');
+    }
+    if (_controllers['glycemia']!.text.isNotEmpty) {
+      constants.add('Glycémie: ${_controllers['glycemia']!.text} g/L');
+    }
+    if (_controllers['electrophoresis']!.text.isNotEmpty) {
+      constants.add('Électrophorèse: ${_controllers['electrophoresis']!.text}');
+    }
+    
+    return constants.join(' | ');
+  }
+
+  @override
+  void dispose() {
+    // Nettoyage de tous les contrôleurs
+    _controllers.forEach((key, controller) {
+      controller.dispose();
+    });
+    super.dispose();
   }
 }

@@ -1,198 +1,417 @@
 // Import des packages Flutter
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:vitalia/presentation/providers/auth_provider.dart';
+//import 'package:vitalia/data/models/user_model.dart';
 
-// Classe pour la page des informations personnelles avec état
 class PersonalInfoPage extends StatefulWidget {
   const PersonalInfoPage({Key? key}) : super(key: key);
 
-  // Création de l'état de la page
   @override
   _PersonalInfoPageState createState() => _PersonalInfoPageState();
 }
 
-// État de la page des informations personnelles
 class _PersonalInfoPageState extends State<PersonalInfoPage> {
-  // Clé pour le formulaire
   final _formKey = GlobalKey<FormState>();
   
-  // Contrôleurs pour les champs du formulaire
-  final TextEditingController _lastNameController = TextEditingController(text: 'Hounhakou');
-  final TextEditingController _firstNameController = TextEditingController(text: 'Bertrand');
-  final TextEditingController _emailController = TextEditingController(text: 'bertrandhounhakou@email.com');
-  final TextEditingController _addressController = TextEditingController(text: '');
-  final TextEditingController _professionController = TextEditingController(text: '');
-  final TextEditingController _birthDateController = TextEditingController(text: '1995-12-13');
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _professionController = TextEditingController();
+  final TextEditingController _birthDateController = TextEditingController();
   
-  // Genre sélectionné
   String _gender = 'Masculin';
+  DateTime? _selectedBirthDate;
+  bool _isLoading = false;
 
-  // Construction de l'interface de la page
   @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView( // Permet le défilement
-      padding: EdgeInsets.all(16.0), // Padding interne
-      child: Form(
-        key: _formKey, // Clé du formulaire
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch, // Alignement étiré
-          children: [
-            // Champ pour le nom
-            TextFormField(
-              controller: _lastNameController,
-              decoration: InputDecoration(
-                labelText: 'Nom', // Label du champ
-                border: OutlineInputBorder(), // Bordure avec outline
-              ),
-              validator: (value) { // Validation du champ
-                if (value == null || value.isEmpty) {
-                  return 'Veuillez entrer votre nom'; // Message d'erreur
-                }
-                return null; // Validation réussie
-              },
-            ),
-            SizedBox(height: 16), // Espacement
-            
-            // Champ pour le prénom
-            TextFormField(
-              controller: _firstNameController,
-              decoration: InputDecoration(
-                labelText: 'Prénom(s)', // Label du champ
-                border: OutlineInputBorder(), // Bordure avec outline
-              ),
-              validator: (value) { // Validation du champ
-                if (value == null || value.isEmpty) {
-                  return 'Veuillez entrer votre prénom'; // Message d'erreur
-                }
-                return null; // Validation réussie
-              },
-            ),
-            SizedBox(height: 16), // Espacement
-            
-            // Champ pour l'email
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress, // Clavier email
-              decoration: InputDecoration(
-                labelText: 'Email', // Label du champ
-                border: OutlineInputBorder(), // Bordure avec outline
-              ),
-              validator: (value) { // Validation du champ
-                if (value == null || value.isEmpty) {
-                  return 'Veuillez entrer votre email'; // Message d'erreur
-                }
-                if (!value.contains('@')) { // Vérification de la présence de @
-                  return 'Veuillez entrer un email valide'; // Message d'erreur
-                }
-                return null; // Validation réussie
-              },
-            ),
-            SizedBox(height: 16), // Espacement
-            
-            // Champ pour l'adresse
-            TextFormField(
-              controller: _addressController,
-              decoration: InputDecoration(
-                labelText: 'Adresse', // Label du champ
-                hintText: 'Entrez votre adresse', // Texte d'indication
-                border: OutlineInputBorder(), // Bordure avec outline
-              ),
-            ),
-            SizedBox(height: 16), // Espacement
-            
-            // Champ pour la profession
-            TextFormField(
-              controller: _professionController,
-              decoration: InputDecoration(
-                labelText: 'Profession', // Label du champ
-                hintText: 'Votre Profession', // Texte d'indication
-                border: OutlineInputBorder(), // Bordure avec outline
-              ),
-            ),
-            SizedBox(height: 16), // Espacement
-            
-            // Champ pour la date de naissance
-            TextFormField(
-              controller: _birthDateController,
-              decoration: InputDecoration(
-                labelText: 'Date de naissance', // Label du champ
-                border: OutlineInputBorder(), // Bordure avec outline
-                suffixIcon: IconButton( // Icône de calendrier
-                  icon: Icon(Icons.calendar_today),
-                  onPressed: _selectBirthDate, // Sélection de la date
-                ),
-              ),
-              readOnly: true, // Lecture seule pour ouvrir le sélecteur
-            ),
-            SizedBox(height: 16), // Espacement
-            
-            // Sélecteur de genre
-            DropdownButtonFormField<String>(
-              value: _gender, // Valeur actuelle
-              items: ['Masculin', 'Féminin'].map((String value) { // Options
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value), // Affichage de la valeur
-                );
-              }).toList(),
-              onChanged: (value) { // Callback du changement
-                setState(() {
-                  _gender = value!; // Mise à jour du genre
-                });
-              },
-              decoration: InputDecoration(
-                labelText: 'Sexe', // Label du dropdown
-                border: OutlineInputBorder(), // Bordure avec outline
-              ),
-            ),
-            SizedBox(height: 24), // Espacement
-            
-            // Lien pour réinitialiser le mot de passe
-            TextButton(
-              onPressed: () {
-                // TODO: Implémenter la réinitialisation du mot de passe
-              },
-              child: Text('Réinitialiser votre mot de passe'), // Texte du lien
-            ),
-            SizedBox(height: 24), // Espacement
-            
-            // Bouton de sauvegarde
-            ElevatedButton(
-              onPressed: _saveProfile, // Sauvegarde du profil
-              child: Text('ENREGISTRER'), // Texte du bouton
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 16), // Padding vertical
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  void initState() {
+    super.initState();
+    _loadUserData();
   }
 
-  // Méthode pour sélectionner la date de naissance
-  Future<void> _selectBirthDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(1995, 12, 13), // Date initiale
-      firstDate: DateTime(1900), // Date minimale
-      lastDate: DateTime.now(), // Date maximale (aujourd'hui)
-    );
+  // Charger les données de l'utilisateur connecté
+  void _loadUserData() {
+    // CORRECTION : Utilisez 'listen: false' pour éviter les rebuilds inutiles
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.currentUser;
     
-    if (picked != null) { // Si une date a été sélectionnée
+    if (user != null) {
       setState(() {
-        // Formatage de la date en string
-        _birthDateController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+        // Séparation du nom complet en prénom et nom
+        final nameParts = user.name.split(' ');
+        _firstNameController.text = user.firstName ?? (nameParts.isNotEmpty ? nameParts.first : '');
+        _lastNameController.text = user.lastName ?? (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '');
+        _emailController.text = user.email;
+        _phoneController.text = user.phone;
+        _addressController.text = user.address ?? '';
+        _professionController.text = user.medicalHistory ?? '';
+        _gender = user.gender ?? 'Masculin';
+        
+        if (user.dateOfBirth != null) {
+          _selectedBirthDate = user.dateOfBirth;
+          _birthDateController.text = _formatDate(user.dateOfBirth!);
+        }
       });
     }
   }
 
-  // Méthode pour sauvegarder le profil
-  void _saveProfile() {
-    if (_formKey.currentState!.validate()) { // Validation du formulaire
-      // TODO: Sauvegarder les informations du profil
+  String _formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // CORRECTION : Utilisez Consumer au lieu de Provider.of dans build
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final user = authProvider.currentUser;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text('Informations Personnelles'),
+            backgroundColor: Color(0xFF2A7FDE),
+            foregroundColor: Colors.white,
+          ),
+          body: _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (user != null) ...[
+                          Card(
+                            elevation: 2,
+                            child: Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Column(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 30,
+                                    backgroundColor: Color(0xFF2A7FDE),
+                                    child: Text(
+                                      user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    user.name,
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    user.email,
+                                    style: TextStyle(color: Colors.grey[600]),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    user.phone,
+                                    style: TextStyle(color: Colors.grey[600]),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                        ],
+
+                        // ... Tous vos champs de formulaire restent identiques ...
+                        TextFormField(
+                          controller: _firstNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Prénom(s)',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.person),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez entrer votre prénom';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 16),
+                        
+                        TextFormField(
+                          controller: _lastNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Nom',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez entrer votre nom';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 16),
+                        
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: 'Email',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.email),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                          ),
+                          readOnly: true,
+                        ),
+                        SizedBox(height: 16),
+
+                        TextFormField(
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            labelText: 'Téléphone',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.phone),
+                            filled: true,
+                            fillColor: Colors.grey[100],
+                          ),
+                          readOnly: true,
+                        ),
+                        SizedBox(height: 16),
+                        
+                        TextFormField(
+                          controller: _addressController,
+                          decoration: InputDecoration(
+                            labelText: 'Adresse',
+                            hintText: 'Entrez votre adresse complète',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.home),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        
+                        TextFormField(
+                          controller: _professionController,
+                          decoration: InputDecoration(
+                            labelText: 'Profession',
+                            hintText: 'Votre profession actuelle',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.work),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        
+                        TextFormField(
+                          controller: _birthDateController,
+                          decoration: InputDecoration(
+                            labelText: 'Date de naissance',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.calendar_today),
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.edit),
+                              onPressed: _selectBirthDate,
+                            ),
+                          ),
+                          readOnly: true,
+                        ),
+                        SizedBox(height: 16),
+                        
+                        DropdownButtonFormField<String>(
+                          value: _gender,
+                          items: ['Masculin', 'Féminin', 'Autre'].map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _gender = value!;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Genre',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.person_outlined),
+                          ),
+                        ),
+                        SizedBox(height: 32),
+                        
+                        Card(
+                          elevation: 1,
+                          child: ListTile(
+                            leading: Icon(Icons.lock_reset, color: Colors.orange),
+                            title: Text('Sécurité du compte'),
+                            subtitle: Text('Réinitialiser votre mot de passe'),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: _resetPassword,
+                          ),
+                        ),
+                        SizedBox(height: 24),
+                        
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _saveProfile,
+                          child: _isLoading
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Text('ENREGISTRER LES MODIFICATIONS'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF2A7FDE),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  Future<void> _selectBirthDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedBirthDate ?? DateTime.now().subtract(Duration(days: 365 * 25)),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    
+    if (picked != null) {
+      setState(() {
+        _selectedBirthDate = picked;
+        _birthDateController.text = _formatDate(picked);
+      });
+    }
+  }
+
+  void _resetPassword() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Réinitialisation du mot de passe'),
+        content: Text('Un email de réinitialisation sera envoyé à votre adresse ${_emailController.text}. Voulez-vous continuer ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _sendPasswordResetEmail();
+            },
+            child: Text('Confirmer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sendPasswordResetEmail() async {
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: _emailController.text,
+      );
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Profil mis à jour avec succès')), // Message de succès
+        SnackBar(
+          content: Text('Email de réinitialisation envoyé à ${_emailController.text}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de l\'envoi de l\'email: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
+  }
+
+  // MÉTHODE DE SAUVEGARDE
+  Future<void> _saveProfile() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // CORRECTION : Utilisez Provider.of avec listen: false
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final currentUser = authProvider.currentUser;
+
+        if (currentUser != null) {
+          final updatedUser = currentUser.copyWith(
+            name: '${_firstNameController.text} ${_lastNameController.text}',
+            firstName: _firstNameController.text,
+            lastName: _lastNameController.text,
+            address: _addressController.text.isNotEmpty ? _addressController.text : null,
+            gender: _gender,
+            dateOfBirth: _selectedBirthDate,
+            medicalHistory: _professionController.text.isNotEmpty ? _professionController.text : null,
+            updatedAt: DateTime.now(),
+          );
+
+          // SAUVEGARDE DANS FIRESTORE
+          await authProvider.updateUserProfile(updatedUser);
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Profil mis à jour avec succès !'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          // Recharger les données
+          _loadUserData();
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la mise à jour: $e'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _lastNameController.dispose();
+    _firstNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _professionController.dispose();
+    _birthDateController.dispose();
+    super.dispose();
   }
 }

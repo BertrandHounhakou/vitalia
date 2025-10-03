@@ -75,7 +75,7 @@ void main() async {
 
     // Initialisation des services Firebase
     final FirebaseAuthService authService = FirebaseAuthService();
-    final UserService userService = firebase_service.FirebaseUserService(); 
+    final firebase_service.FirebaseUserService userService = firebase_service.FirebaseUserService();
 
     // Lancement de l'application avec les services injectés
     runApp(VitaliaApp(
@@ -94,7 +94,7 @@ void main() async {
 class VitaliaApp extends StatelessWidget {
   // Services injectés via le constructeur
   final FirebaseAuthService authService;
-  final UserService userService;
+  final firebase_service.FirebaseUserService userService;
 
   // Constructeur avec services requis
   const VitaliaApp({
@@ -111,7 +111,7 @@ class VitaliaApp extends StatelessWidget {
       providers: [
         // Provider d'authentification Firebase
         ChangeNotifierProvider<AuthProvider>(
-          create: (_) => AuthProvider(authService),
+          create: (_) => AuthProvider(authService,userService),
         ),
 
         // Provider d'utilisateur Firebase

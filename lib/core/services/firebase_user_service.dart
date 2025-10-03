@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'user_service_interface.dart'; // Import de l'interface
+import 'user_service_interface.dart';
 import '../../data/models/user_model.dart';
 
-class FirebaseUserService implements UserService { // implements UserService
+class FirebaseUserService implements UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
@@ -32,9 +32,19 @@ class FirebaseUserService implements UserService { // implements UserService
       await _firestore.collection('users').doc(userCredential.user!.uid).set({
         'id': userCredential.user!.uid,
         'email': user.email,
-        'firstName': user.name,
-        'lastName': user.role,
-        'phoneNumber': user.phone,
+        'name': user.name,
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+        'phone': user.phone,
+        'role': user.role,
+        'address': user.address,
+        'gender': user.gender,
+        'dateOfBirth': user.dateOfBirth != null 
+            ? Timestamp.fromDate(user.dateOfBirth!)
+            : null,
+        'medicalHistory': user.medicalHistory,
+        'emergencyContact': user.emergencyContact,
+        'emailVerified': user.emailVerified,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -76,7 +86,6 @@ class FirebaseUserService implements UserService { // implements UserService
     }
   }
 
-  // Ajoutez ces méthodes manquantes de l'interface
   @override
   Future<UserModel?> getUserById(String userId) async {
     try {
@@ -99,6 +108,39 @@ class FirebaseUserService implements UserService { // implements UserService
       });
     } catch (e) {
       throw Exception('Erreur lors de la mise à jour de l\'utilisateur: $e');
+    }
+  }
+
+  // MÉTHODE SPÉCIFIQUE POUR METTRE À JOUR LE PROFIL UTILISATEUR
+  Future<void> updateUserProfile(UserModel user) async {
+    try {
+      print('🚀 FirebaseUserService: Mise à jour du profil ${user.id}');
+      
+      final updates = {
+        'name': user.name,
+        'firstName': user.firstName,
+        'lastName': user.lastName,
+        'address': user.address,
+        'gender': user.gender,
+        'dateOfBirth': user.dateOfBirth != null 
+            ? Timestamp.fromDate(user.dateOfBirth!)
+            : null,
+        'medicalHistory': user.medicalHistory,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      // Supprimer les valeurs null pour éviter les erreurs Firestore
+      updates.removeWhere((key, value) => value == null);
+
+      await _firestore.collection('users').doc(user.id).update(updates);
+
+      print('✅ FirebaseUserService: Profil mis à jour dans Firestore');
+    } on FirebaseException catch (e) {
+      print('❌ FirebaseUserService: Erreur Firestore - ${e.code}: ${e.message}');
+      throw Exception('Erreur Firestore: ${e.code} - ${e.message}');
+    } catch (e) {
+      print('❌ FirebaseUserService: Erreur inattendue: $e');
+      throw Exception('Erreur lors de la mise à jour du profil: $e');
     }
   }
 }

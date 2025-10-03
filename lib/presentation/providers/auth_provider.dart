@@ -1,15 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:vitalia/core/services/firebase_auth.dart';
+import 'package:vitalia/core/services/firebase_user_service.dart';
 import 'package:vitalia/data/models/user_model.dart';
 
 class AuthProvider with ChangeNotifier {
   final FirebaseAuthService _authService;
+  final FirebaseUserService _userService;
   
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _error;
 
-  AuthProvider(this._authService);
+  AuthProvider(this._authService, this._userService);
 
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
@@ -50,7 +52,7 @@ class AuthProvider with ChangeNotifier {
       }
       
       _error = errorMessage;
-      rethrow; // Important pour que register_page.dart puisse aussi capturer l'erreur
+      rethrow;
       
     } finally {
       _isLoading = false;
@@ -156,15 +158,43 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Mettre à jour le profil utilisateur
+  // Mettre à jour le profil utilisateur DANS FIRESTORE
   Future<void> updateUserProfile(UserModel updatedUser) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
     try {
-      // Implémentez la mise à jour du profil si nécessaire
+      print('🔄 AuthProvider: Mise à jour du profil pour ${updatedUser.email}');
+      
+      // Mise à jour dans Firestore via le service
+      await _userService.updateUserProfile(updatedUser);
+      
+      // Mise à jour locale
       _currentUser = updatedUser;
-      notifyListeners();
+      _error = null;
+      
+      print('✅ AuthProvider: Profil mis à jour avec succès');
+      
     } catch (e) {
-      _error = 'Erreur mise à jour profil: $e';
+      print('❌ AuthProvider: Erreur mise à jour profil: $e');
+      _error = 'Erreur lors de la mise à jour du profil: $e';
       rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Recharger l'utilisateur depuis Firestore
+  Future<void> reloadUser() async {
+    try {
+      if (_authService.isLoggedIn) {
+        _currentUser = await _authService.getCurrentUser();
+        notifyListeners();
+      }
+    } catch (e) {
+      print('❌ AuthProvider: Erreur rechargement utilisateur: $e');
     }
   }
 }

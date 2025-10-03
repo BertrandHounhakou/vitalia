@@ -1,6 +1,6 @@
 // Import des packages Flutter
 import 'package:flutter/material.dart';
-import 'package:vitalia/presentation/pages/insurances/insurances.dart';
+//import 'package:vitalia/presentation/pages/insurances/insurances.dart';
 import 'package:vitalia/presentation/pages/profile/insurance_detail_page.dart';
 import 'personal_info_page.dart';
 import 'medical_constants_page.dart';
