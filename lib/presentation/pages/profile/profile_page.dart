@@ -1,7 +1,8 @@
 // Import des packages Flutter
 import 'package:flutter/material.dart';
-//import 'package:vitalia/presentation/pages/insurances/insurances.dart';
 import 'package:vitalia/presentation/pages/profile/insurance_detail_page.dart';
+import 'package:vitalia/presentation/pages/menu/menu_page.dart';
+import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
 import 'personal_info_page.dart';
 import 'medical_constants_page.dart';
 
@@ -31,29 +32,49 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Mon profil'), // Titre de la page
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back), // Icône de retour
-          onPressed: () {
-            Navigator.pop(context); // Retour à la page précédente
-          },
-        ),
-        bottom: TabBar( // Barre d'onglets
-          controller: _tabController, // Contrôleur des onglets
-          tabs: [
-            Tab(text: 'PROFIL'), // Onglet Profil
-            Tab(text: 'CONSTANTES'), // Onglet Constantes
-            Tab(text: 'ASSURANCES'), // Onglet Assurances
-          ],
-        ),
+      // AppBar personnalisée avec dégradé (avec bouton MENU)
+      appBar: CustomAppBar(
+        title: 'Mon profil',
+        showMenuButton: true, // Bouton MENU
       ),
-      body: TabBarView( // Contenu des onglets
-        controller: _tabController,
+      
+      // Menu latéral
+      drawer: MenuPage(),
+      
+      body: Column(
         children: [
-          PersonalInfoPage(), // Page des informations personnelles
-          MedicalConstantsPage(), // Page des constantes médicales
-          InsuranceDetailPage(), // Page des assurances
+          // Barre d'onglets sur fond blanc (en dessous de l'AppBar)
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: Color(0xFF26A69A), // Indicateur vert-bleu
+              indicatorWeight: 3,
+              labelColor: Color(0xFF26A69A), // Texte onglet actif
+              unselectedLabelColor: Colors.grey, // Texte onglet inactif
+              labelStyle: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+              tabs: [
+                Tab(text: 'PROFIL'),
+                Tab(text: 'CONSTANTES'),
+                Tab(text: 'ASSURANCES'),
+              ],
+            ),
+          ),
+          
+          // Contenu des onglets
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                PersonalInfoPage(), // Page des informations personnelles
+                MedicalConstantsPage(), // Page des constantes médicales
+                InsuranceDetailPage(), // Page des assurances
+              ],
+            ),
+          ),
         ],
       ),
     );

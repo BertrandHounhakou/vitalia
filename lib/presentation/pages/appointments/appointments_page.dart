@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:vitalia/data/models/appointment_model.dart';
 import 'package:vitalia/presentation/providers/appointment_provider.dart';
 import 'package:vitalia/presentation/widgets/appointment_card.dart';
+import 'package:vitalia/presentation/pages/menu/menu_page.dart';
+import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
 import 'book_appointment_page.dart';
 
 // Classe pour la page des rendez-vous avec état et onglets
@@ -48,32 +50,52 @@ class _AppointmentsPageState extends State<AppointmentsPage> with SingleTickerPr
     _appointmentProvider = Provider.of<AppointmentProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Mes Rendez-vous'), // Titre de la page
-        leading: IconButton(
-          icon: Icon(Icons.menu), // Icône du menu
-          onPressed: () {
-            Navigator.pushNamed(context, '/menu'); // Navigation vers le menu
-          },
-        ),
-        bottom: TabBar( // Barre d'onglets
-          controller: _tabController, // Contrôleur des onglets
-          tabs: [
-            Tab(text: 'RENDEZ-VOUS À VENIR'), // Onglet rendez-vous à venir
-            Tab(text: 'RENDEZ-VOUS PASSÉS'), // Onglet rendez-vous passés
-          ],
-        ),
+      // Utilisation de l'AppBar personnalisée unifiée
+      appBar: CustomAppBar(
+        title: 'Mes Rendez-vous',
+        showMenuButton: true,
       ),
-      body: TabBarView( // Contenu des onglets
-        controller: _tabController,
+      
+      // Menu latéral
+      drawer: MenuPage(),
+      
+      body: Column(
         children: [
-          // Onglet des rendez-vous à venir
-          _buildAppointmentsList(_appointmentProvider.appointments.where((apt) => 
-            !apt.isPast && apt.status != 'cancelled').toList(), true),
+          // Barre d'onglets sur fond blanc
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: Color(0xFF26A69A), // Indicateur vert-bleu
+              indicatorWeight: 3,
+              labelColor: Color(0xFF26A69A), // Texte onglet actif
+              unselectedLabelColor: Colors.grey, // Texte onglet inactif
+              labelStyle: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+              tabs: [
+                Tab(text: 'À VENIR'),
+                Tab(text: 'PASSÉS'),
+              ],
+            ),
+          ),
           
-          // Onglet des rendez-vous passés
-          _buildAppointmentsList(_appointmentProvider.appointments.where((apt) => 
-            apt.isPast || apt.status == 'cancelled').toList(), false),
+          // Contenu des onglets
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // Onglet des rendez-vous à venir
+                _buildAppointmentsList(_appointmentProvider.appointments.where((apt) => 
+                  !apt.isPast && apt.status != 'cancelled').toList(), true),
+                
+                // Onglet des rendez-vous passés
+                _buildAppointmentsList(_appointmentProvider.appointments.where((apt) => 
+                  apt.isPast || apt.status == 'cancelled').toList(), false),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton( // Bouton flottant d'ajout

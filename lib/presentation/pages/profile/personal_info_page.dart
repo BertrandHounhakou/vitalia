@@ -48,7 +48,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
         _emailController.text = user.email;
         _phoneController.text = user.phone;
         _addressController.text = user.address ?? '';
-        _professionController.text = user.medicalHistory ?? '';
+        _professionController.text = user.profession ?? '';
         _gender = user.gender ?? 'Masculin';
         
         if (user.dateOfBirth != null) {
@@ -369,7 +369,7 @@ class _PersonalInfoPageState extends State<PersonalInfoPage> {
             address: _addressController.text.isNotEmpty ? _addressController.text : null,
             gender: _gender,
             dateOfBirth: _selectedBirthDate,
-            medicalHistory: _professionController.text.isNotEmpty ? _professionController.text : null,
+            profession: _professionController.text.isNotEmpty ? _professionController.text : null,
             updatedAt: DateTime.now(),
           );
 

@@ -43,14 +43,46 @@ class _MedicalConstantsPageState extends State<MedicalConstantsPage> {
     if (user != null) {
       setState(() {
         _controllers['bloodGroup']!.text = user.bloodType ?? '';
-        _controllers['height']!.text = '';
-        _controllers['weight']!.text = '';
-        _controllers['glycemia']!.text = '';
-        _controllers['electrophoresis']!.text = '';
-        _controllers['bmi']!.text = '';
         _controllers['allergies']!.text = user.allergies ?? '';
         _controllers['emergencyContact']!.text = user.emergencyContact ?? '';
+        
+        // Parser les constantes médicales depuis medicalHistory
+        if (user.medicalHistory != null && user.medicalHistory!.isNotEmpty) {
+          _parseMedicalHistory(user.medicalHistory!);
+        } else {
+          // Réinitialiser les champs si pas de données
+          _controllers['height']!.text = '';
+          _controllers['weight']!.text = '';
+          _controllers['glycemia']!.text = '';
+          _controllers['electrophoresis']!.text = '';
+          _controllers['bmi']!.text = '';
+        }
       });
+    }
+  }
+  
+  // Parser la chaîne medicalHistory pour extraire les valeurs
+  void _parseMedicalHistory(String medicalHistory) {
+    // Format: "Taille: 175 cm | Poids: 70 kg | IMC: 22.9 | Glycémie: 1.0 g/L | Électrophorèse: AA"
+    final parts = medicalHistory.split(' | ');
+    
+    for (var part in parts) {
+      if (part.contains('Taille:')) {
+        final value = part.replaceAll('Taille:', '').replaceAll('cm', '').trim();
+        _controllers['height']!.text = value;
+      } else if (part.contains('Poids:')) {
+        final value = part.replaceAll('Poids:', '').replaceAll('kg', '').trim();
+        _controllers['weight']!.text = value;
+      } else if (part.contains('IMC:')) {
+        final value = part.replaceAll('IMC:', '').trim();
+        _controllers['bmi']!.text = value;
+      } else if (part.contains('Glycémie:')) {
+        final value = part.replaceAll('Glycémie:', '').replaceAll('g/L', '').trim();
+        _controllers['glycemia']!.text = value;
+      } else if (part.contains('Électrophorèse:')) {
+        final value = part.replaceAll('Électrophorèse:', '').trim();
+        _controllers['electrophoresis']!.text = value;
+      }
     }
   }
 
@@ -333,6 +365,9 @@ class _MedicalConstantsPageState extends State<MedicalConstantsPage> {
         // SAUVEGARDE RÉELLE DANS FIRESTORE
         await authProvider.updateUserProfile(updatedUser);
 
+        // Recharger les données depuis Firestore pour confirmer la sauvegarde
+        await authProvider.reloadUser();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Constantes médicales sauvegardées avec succès !'),
@@ -341,7 +376,7 @@ class _MedicalConstantsPageState extends State<MedicalConstantsPage> {
           ),
         );
 
-        // Recharger les données
+        // Recharger les données dans les contrôleurs
         _loadMedicalData();
       }
     } catch (e) {

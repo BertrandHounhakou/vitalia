@@ -2,391 +2,486 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:vitalia/presentation/providers/appointment_provider.dart';
-import 'package:vitalia/data/models/appointment_model.dart';
+import 'package:vitalia/presentation/providers/auth_provider.dart';
+import 'package:vitalia/presentation/pages/profile/medical_constants_page.dart';
+import 'package:vitalia/presentation/pages/menu/menu_page.dart';
+import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
 
-// Classe pour la page du carnet de santé avec état
+/// Page du carnet de santé affichant les constantes médicales et l'historique des consultations
 class HealthRecordPage extends StatefulWidget {
   const HealthRecordPage({Key? key}) : super(key: key);
 
-  // Création de l'état de la page
   @override
   _HealthRecordPageState createState() => _HealthRecordPageState();
 }
 
-// État de la page du carnet de santé
+/// État de la page du carnet de santé
 class _HealthRecordPageState extends State<HealthRecordPage> {
-  // Données des constantes médicales (simulées)
-  final Map<String, String> _medicalConstants = {
-    'Groupe sanguin': 'O+',
-    'Taille': '175 cm',
-    'Poids': '70 kg',
-    'Glycémie': '1.0 g/L',
-    'Electrophorèse': 'AA',
-    'IMC': '22.9',
-  };
+  // Liste des consultations (historique persistant)
+  final List<Map<String, dynamic>> _consultations = [
+    // Exemples de consultations - Ces données devraient venir de Firebase
+    {
+      'date': DateTime(2024, 3, 15, 10, 30),
+      'doctorName': 'Dr. Dupont',
+      'reason': 'Consultation de routine',
+      'notes': 'Tout va bien, bon état général',
+    },
+    {
+      'date': DateTime(2024, 2, 20, 14, 15),
+      'doctorName': 'Dr. Martin',
+      'reason': 'Suivi traitement',
+      'notes': 'Traitement efficace, continuer',
+    },
+  ];
 
-  // Indicateur de chargement
-  bool _isLoading = true;
-
-  // Liste des consultations à venir
-  List<AppointmentModel> _upcomingAppointments = [];
-
-  // Initialisation de l'état
-  @override
-  void initState() {
-    super.initState();
-    _loadUpcomingAppointments(); // Chargement des consultations
-  }
-
-  // Méthode pour charger les consultations à venir
-  Future<void> _loadUpcomingAppointments() async {
-    // Simulation de délai de chargement
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Données simulées - À remplacer par des données réelles
-    final appointments = [
-      AppointmentModel(
-        id: '1',
-        patientId: 'patient_1',
-        centerId: 'center_1',
-        dateTime: DateTime.now().add(const Duration(days: 3)),
-        status: 'scheduled',
-        notes: 'Consultation de routine avec le cardiologue',
-      ),
-      AppointmentModel(
-        id: '2',
-        patientId: 'patient_1',
-        centerId: 'center_2',
-        dateTime: DateTime.now().add(const Duration(days: 7)),
-        status: 'scheduled',
-        notes: 'Suivi traitement médicamenteux',
-      ),
-      AppointmentModel(
-        id: '3',
-        patientId: 'patient_1',
-        centerId: 'center_3',
-        dateTime: DateTime.now().add(const Duration(days: 14)),
-        status: 'scheduled',
-        notes: 'Examen sanguin annuel',
-      ),
-    ];
-
-    setState(() {
-      _upcomingAppointments = appointments;
-      _isLoading = false;
-    });
-  }
-
-  // Construction de l'interface de la page
   @override
   Widget build(BuildContext context) {
+    // Récupération de l'utilisateur connecté et de ses constantes médicales
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.currentUser;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Mon Carnet de Santé'), // Titre de la page
-        leading: IconButton(
-          icon: Icon(Icons.menu), // Icône du menu
-          onPressed: () {
-            Navigator.pushNamed(context, '/menu'); // Navigation vers le menu
-          },
-        ),
+      // Utilisation de l'AppBar personnalisée unifiée
+      appBar: CustomAppBar(
+        title: 'Mon carnet de santé',
+        showMenuButton: true,
       ),
-      body: Column(
-        children: [
-          // Section des constantes médicales
-          Expanded(
-            flex: 2, // 2 parts pour les constantes
-            child: _buildMedicalConstantsSection(),
-          ),
-          
-          // Barre de séparation horizontale
-          Container(
-            height: 1, // Épaisseur de la barre
-            color: Colors.grey[300], // Couleur de la barre
-            margin: EdgeInsets.symmetric(vertical: 16), // Marge verticale
-          ),
-          
-          // Titre des consultations à venir
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                Text(
-                  'Consultations à venir', // Titre de section
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Icon(Icons.calendar_today, size: 20, color: Theme.of(context).primaryColor),
-              ],
-            ),
-          ),
-          SizedBox(height: 8),
-          
-          // Section des consultations à venir
-          Expanded(
-            flex: 3, // 3 parts pour les consultations
-            child: _buildUpcomingAppointmentsSection(),
-          ),
-        ],
-      ),
-    );
-  }
+      
+      // Menu latéral
+      drawer: MenuPage(),
 
-  // Méthode pour construire la section des constantes médicales
-  Widget _buildMedicalConstantsSection() {
-    return SingleChildScrollView( // Permet le défilement si nécessaire
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Titre de la section
-          Text(
-            'Mes Constantes Médicales', // Titre de section
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 16),
-          
-          // Grille des constantes médicales (2 colonnes)
-          GridView.builder(
-            shrinkWrap: true, // Rétrécissement pour s'adapter
-            physics: NeverScrollableScrollPhysics(), // Désactive le défilement propre
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, // 2 colonnes
-              crossAxisSpacing: 12, // Espacement horizontal
-              mainAxisSpacing: 12, // Espacement vertical
-              childAspectRatio: 1.5, // Ratio largeur/hauteur
-            ),
-            itemCount: _medicalConstants.length,
-            itemBuilder: (context, index) {
-              final key = _medicalConstants.keys.elementAt(index);
-              final value = _medicalConstants.values.elementAt(index);
-              
-              return _buildConstantCard(key, value); // Carte de constante
-            },
-          ),
-          
-          // Bouton pour modifier les constantes
-          SizedBox(height: 20),
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _showEditConstantsDialog(); // Dialog de modification
-              },
-              icon: Icon(Icons.edit, size: 18),
-              label: Text('Modifier mes constantes'),
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Méthode pour construire une carte de constante
-  Widget _buildConstantCard(String title, String value) {
-    return Card(
-      elevation: 2, // Élévation de la carte
-      child: Padding(
-        padding: EdgeInsets.all(12),
+      body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              title, // Titre de la constante
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
+            // Section des constantes médicales
+            Container(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Titre avec icône (sans bouton modifier)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.medical_services,
+                        color: Color(0xFF2A9D8F),
+                        size: 24,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Mes constantes médicales',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 12),
+
+                  // Grille des constantes médicales (3 colonnes, cartes compactes)
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    crossAxisCount: 3, // 3 colonnes
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6,
+                    childAspectRatio: 0.95,
+                    children: [
+                      // Carte Groupe sanguin
+                      _buildCompactConstantCard(
+                        icon: Icons.bloodtype,
+                        iconColor: Colors.red,
+                        title: 'B+',
+                        subtitle: 'Groupe sanguin',
+                        value: user?.bloodType ?? 'N/A',
+                      ),
+
+                      // Carte Taille
+                      _buildCompactConstantCard(
+                        icon: Icons.height,
+                        iconColor: Colors.blue,
+                        title: '162',
+                        subtitle: 'Taille',
+                        value: _extractHeight(user?.medicalHistory),
+                      ),
+
+                      // Carte Poids
+                      _buildCompactConstantCard(
+                        icon: Icons.monitor_weight,
+                        iconColor: Colors.orange,
+                        title: '65',
+                        subtitle: 'Poids',
+                        value: _extractWeight(user?.medicalHistory),
+                      ),
+
+                      // Carte Glycémie
+                      _buildCompactConstantCard(
+                        icon: Icons.monitor_heart,
+                        iconColor: Colors.pink,
+                        title: '1',
+                        subtitle: 'Glycémie',
+                        value: _extractGlycemia(user?.medicalHistory),
+                      ),
+
+                      // Carte Électrophorèse
+                      _buildCompactConstantCard(
+                        icon: Icons.science,
+                        iconColor: Colors.purple,
+                        title: 'AA',
+                        subtitle: 'Electrophorèse',
+                        value: _extractElectrophoresis(user?.medicalHistory),
+                      ),
+
+                      // Carte IMC
+                      _buildCompactConstantCard(
+                        icon: Icons.calculate,
+                        iconColor: Colors.teal,
+                        title: '24,8',
+                        subtitle: 'Imc',
+                        value: _extractBMI(user?.medicalHistory),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
-            SizedBox(height: 8),
-            Text(
-              value, // Valeur de la constante
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
+
+            // Divider
+            Divider(thickness: 8, color: Colors.grey[200]),
+
+            // Section de l'historique des consultations
+            Container(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Titre
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.history,
+                        color: Color(0xFF2A9D8F),
+                        size: 24,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Historique des consultations',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 16),
+
+                  // Liste des consultations ou message vide
+                  _consultations.isEmpty
+                      ? _buildEmptyConsultationsMessage()
+                      : Column(
+                          children: _consultations.map((consultation) {
+                            return _buildConsultationCard(consultation);
+                          }).toList(),
+                        ),
+                ],
               ),
             ),
           ],
         ),
       ),
+
+      // Bouton flottant pour ajouter une consultation
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showAddConsultationDialog();
+        },
+        backgroundColor: Color(0xFF2A9D8F),
+        child: Icon(Icons.add),
+        tooltip: 'Ajouter une consultation',
+      ),
     );
   }
 
-  // Méthode pour construire la section des consultations à venir
-  Widget _buildUpcomingAppointmentsSection() {
-    if (_isLoading) {
-      return Center(child: CircularProgressIndicator()); // Indicateur de chargement
-    }
-
-    if (_upcomingAppointments.isEmpty) {
-      return Center(
+  /// Widget pour construire une carte de constante compacte (comme sur la photo)
+  Widget _buildCompactConstantCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required String value,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(6),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Icône (réduite)
             Icon(
-              Icons.calendar_today,
-              size: 48,
-              color: Colors.grey,
+              icon,
+              size: 24,
+              color: iconColor,
             ),
-            SizedBox(height: 16),
+
+            SizedBox(height: 4),
+
+            // Valeur principale (réduite)
             Text(
-              'Aucune consultation à venir',
+              value,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Prenez un rendez-vous pour commencer',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
               textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ],
-        ),
-      );
-    }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _upcomingAppointments.length,
-      itemBuilder: (context, index) {
-        final appointment = _upcomingAppointments[index];
-        return _buildAppointmentItem(appointment); // Utiliser la nouvelle méthode
-      },
-    );
-  }
+            SizedBox(height: 2),
 
-  // Méthode pour construire un élément de consultation
-  Widget _buildAppointmentItem(AppointmentModel appointment) {
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        contentPadding: EdgeInsets.all(16),
-        leading: Icon(Icons.calendar_today, color: Colors.blue, size: 32),
-        title: Text(
-          'Consultation #${appointment.id}',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 6),
+            // Libellé (plus petit)
             Text(
-              'Date: ${DateFormat('dd/MM/yyyy').format(appointment.dateTime)}',
-              style: TextStyle(fontSize: 14),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Heure: ${DateFormat('HH:mm').format(appointment.dateTime)}',
-              style: TextStyle(fontSize: 14),
-            ),
-            if (appointment.notes != null && appointment.notes!.isNotEmpty) ...[
-              SizedBox(height: 6),
-              Text(
-                'Notes: ${appointment.notes}',
-                style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+              subtitle,
+              style: TextStyle(
+                fontSize: 9,
+                color: Colors.grey[600],
               ),
-            ],
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
-        ),
-        trailing: Chip(
-          label: Text(
-            _getStatusText(appointment.status),
-            style: TextStyle(fontSize: 12, color: Colors.white),
-          ),
-          backgroundColor: _getStatusColor(appointment.status),
         ),
       ),
     );
   }
 
-  // Méthode pour obtenir le texte du statut
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'scheduled':
-        return 'PROGRAMMÉ';
-      case 'confirmed':
-        return 'CONFIRMÉ';
-      case 'cancelled':
-        return 'ANNULÉ';
-      case 'completed':
-        return 'TERMINÉ';
-      default:
-        return status.toUpperCase();
-    }
+  /// Widget pour construire une carte de consultation
+  Widget _buildConsultationCard(Map<String, dynamic> consultation) {
+    final date = consultation['date'] as DateTime;
+    final formattedDate = DateFormat('dd/MM/yyyy').format(date);
+    final formattedTime = DateFormat('HH:mm').format(date);
+
+    return Card(
+      margin: EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Icône avec fond coloré
+            Container(
+              padding: EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Color(0xFF2A9D8F).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.medical_services,
+                color: Color(0xFF2A9D8F),
+                size: 24,
+              ),
+            ),
+
+            SizedBox(width: 12),
+
+            // Informations de la consultation
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Nom du docteur
+                  Text(
+                    consultation['doctorName'] ?? 'Docteur',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+
+                  SizedBox(height: 4),
+
+                  // Date et heure
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                      SizedBox(width: 4),
+                      Text(
+                        formattedDate,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Icon(Icons.access_time, size: 14, color: Colors.grey),
+                      SizedBox(width: 4),
+                      Text(
+                        formattedTime,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 6),
+
+                  // Raison de la consultation
+                  Text(
+                    consultation['reason'] ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+
+                  // Notes si disponibles
+                  if (consultation['notes'] != null &&
+                      consultation['notes'].toString().isNotEmpty) ...[
+                    SizedBox(height: 4),
+                    Text(
+                      consultation['notes'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  // Méthode pour obtenir la couleur selon le statut
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'scheduled':
-        return Colors.blue; // Bleu pour programmé
-      case 'confirmed':
-        return Colors.green; // Vert pour confirmé
-      case 'cancelled':
-        return Colors.red; // Rouge pour annulé
-      case 'completed':
-        return Colors.grey; // Gris pour terminé
-      default:
-        return Colors.grey; // Gris par défaut
-    }
+  /// Widget pour le message quand il n'y a pas de consultations
+  Widget _buildEmptyConsultationsMessage() {
+    return Container(
+      padding: EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Icon(
+            Icons.medical_services_outlined,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Vous n\'avez effectué aucune consultation',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Vos consultations apparaîtront ici',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 
-  // Méthode pour afficher la dialog de modification des constantes
-  void _showEditConstantsDialog() {
+  /// Dialog pour ajouter une consultation
+  void _showAddConsultationDialog() {
+    final TextEditingController doctorController = TextEditingController();
+    final TextEditingController reasonController = TextEditingController();
+    final TextEditingController notesController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Modifier mes constantes'), // Titre de la dialog
+          title: Text('Ajouter une consultation'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildEditConstantField('Groupe sanguin', _medicalConstants['Groupe sanguin']!),
+                TextField(
+                  controller: doctorController,
+                  decoration: InputDecoration(
+                    labelText: 'Nom du docteur',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                ),
                 SizedBox(height: 12),
-                _buildEditConstantField('Taille (cm)', _medicalConstants['Taille']!),
+                TextField(
+                  controller: reasonController,
+                  decoration: InputDecoration(
+                    labelText: 'Raison de la consultation',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.medical_services),
+                  ),
+                ),
                 SizedBox(height: 12),
-                _buildEditConstantField('Poids (kg)', _medicalConstants['Poids']!),
-                SizedBox(height: 12),
-                _buildEditConstantField('Glycémie (g/L)', _medicalConstants['Glycémie']!),
-                SizedBox(height: 12),
-                _buildEditConstantField('Electrophorèse', _medicalConstants['Electrophorèse']!),
+                TextField(
+                  controller: notesController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: 'Notes (optionnel)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.note),
+                  ),
+                ),
               ],
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context), // Annulation
+              onPressed: () => Navigator.pop(context),
               child: Text('Annuler'),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () {
-                // TODO: Sauvegarder les modifications
-                Navigator.pop(context); // Fermeture de la dialog
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Constantes mises à jour avec succès')),
-                );
+                if (doctorController.text.isNotEmpty &&
+                    reasonController.text.isNotEmpty) {
+                  setState(() {
+                    _consultations.insert(0, {
+                      'date': DateTime.now(),
+                      'doctorName': doctorController.text,
+                      'reason': reasonController.text,
+                      'notes': notesController.text,
+                    });
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Consultation ajoutée avec succès'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               },
-              child: Text('Enregistrer'),
+              child: Text('Ajouter'),
             ),
           ],
         );
@@ -394,22 +489,34 @@ class _HealthRecordPageState extends State<HealthRecordPage> {
     );
   }
 
-  // Méthode pour construire un champ d'édition de constante
-  Widget _buildEditConstantField(String label, String currentValue) {
-    final controller = TextEditingController(text: currentValue);
-    
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(),
-      ),
-      onChanged: (value) {
-        // Mise à jour temporaire de la valeur
-        setState(() {
-          _medicalConstants[label] = value;
-        });
-      },
-    );
+  // Méthodes pour extraire les données du medicalHistory
+  String _extractHeight(String? medicalHistory) {
+    if (medicalHistory == null) return 'N/A';
+    final match = RegExp(r'Taille: (\d+)').firstMatch(medicalHistory);
+    return match?.group(1) ?? 'N/A';
+  }
+
+  String _extractWeight(String? medicalHistory) {
+    if (medicalHistory == null) return 'N/A';
+    final match = RegExp(r'Poids: (\d+)').firstMatch(medicalHistory);
+    return match?.group(1) ?? 'N/A';
+  }
+
+  String _extractGlycemia(String? medicalHistory) {
+    if (medicalHistory == null) return 'N/A';
+    final match = RegExp(r'Glycémie: ([\d.]+)').firstMatch(medicalHistory);
+    return match?.group(1) ?? 'N/A';
+  }
+
+  String _extractElectrophoresis(String? medicalHistory) {
+    if (medicalHistory == null) return 'N/A';
+    final match = RegExp(r'Électrophorèse: (\w+)').firstMatch(medicalHistory);
+    return match?.group(1) ?? 'N/A';
+  }
+
+  String _extractBMI(String? medicalHistory) {
+    if (medicalHistory == null) return 'N/A';
+    final match = RegExp(r'IMC: ([\d.]+)').firstMatch(medicalHistory);
+    return match?.group(1) ?? 'N/A';
   }
 }

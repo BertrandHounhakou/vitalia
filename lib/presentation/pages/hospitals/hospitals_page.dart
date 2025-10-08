@@ -4,6 +4,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:vitalia/presentation/providers/location_provider.dart';
 import 'package:vitalia/presentation/widgets/hospital_card.dart';
+import 'package:vitalia/presentation/pages/menu/menu_page.dart';
+import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
 
 // Classe pour la page des hôpitaux avec état
 class HospitalsPage extends StatefulWidget {
@@ -137,15 +139,14 @@ class _HospitalsPageState extends State<HospitalsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Unités sanitaires'), // Titre de la page
-        leading: IconButton(
-          icon: Icon(Icons.menu), // Icône du menu
-          onPressed: () {
-            Navigator.pushNamed(context, '/menu'); // Navigation vers le menu
-          },
-        ),
+      // Utilisation de l'AppBar personnalisée unifiée
+      appBar: CustomAppBar(
+        title: 'Unités sanitaires',
+        showMenuButton: true,
       ),
+      
+      // Menu latéral
+      drawer: MenuPage(),
       body: Column(
         children: [
           // Barre de recherche

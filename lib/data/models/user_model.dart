@@ -59,6 +59,9 @@ class UserModel {
   
   @HiveField(17)
   final bool emailVerified;
+  
+  @HiveField(18)
+  final String? profession;
 
   UserModel({
     required this.id,
@@ -80,6 +83,7 @@ class UserModel {
     this.allergies,
     this.medicalHistory,
     this.emailVerified = false,
+    this.profession,
   });
 
   // Méthode copyWith améliorée avec tous les champs
@@ -102,6 +106,7 @@ class UserModel {
     String? allergies,
     String? medicalHistory,
     bool? emailVerified,
+    String? profession,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -122,6 +127,7 @@ class UserModel {
       allergies: allergies ?? this.allergies,
       medicalHistory: medicalHistory ?? this.medicalHistory,
       emailVerified: emailVerified ?? this.emailVerified,
+      profession: profession ?? this.profession,
     );
   }
 
@@ -144,6 +150,7 @@ class UserModel {
       'allergies': allergies,
       'medicalHistory': medicalHistory,
       'emailVerified': emailVerified,
+      'profession': profession,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.now(),
     };
@@ -169,6 +176,7 @@ class UserModel {
       allergies: data['allergies'],
       medicalHistory: data['medicalHistory'],
       emailVerified: data['emailVerified'] ?? false,
+      profession: data['profession'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -190,6 +198,7 @@ class UserModel {
       'allergies': allergies,
       'medicalHistory': medicalHistory,
       'emailVerified': emailVerified,
+      'profession': profession,
       'updatedAt': Timestamp.now(),
     };
   }

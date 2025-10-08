@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:provider/provider.dart';
 import 'package:vitalia/presentation/providers/auth_provider.dart';
+import 'package:vitalia/presentation/pages/menu/menu_page.dart';
 
-// Classe pour la page d'accueil principale avec état
+// Import des widgets réutilisables
+import 'package:vitalia/presentation/widgets/service_card.dart';
+import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
+
+/// Classe pour la page d'accueil principale avec état
+/// Affiche le carrousel, les services et le bouton de rendez-vous
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
@@ -13,24 +19,27 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-// État de la page d'accueil
+/// État de la page d'accueil
+/// Gère l'index du carrousel et les données des services
 class _HomePageState extends State<HomePage> {
   // Index courant du carrousel d'images
   int _currentCarouselIndex = 0;
   
   // Liste des images du carrousel
+  // TODO: Remplacer par vos vraies images
   final List<String> carouselImages = [
     'assets/images/carousel1.jpg',
     'assets/images/carousel2.jpg',
     'assets/images/carousel3.jpg',
   ];
 
-  // Liste des éléments de la page d'accueil avec leurs routes
+  // Liste des services de l'application avec leurs informations
+  // Chaque service contient : titre, icône et route de navigation
   final List<Map<String, dynamic>> homeItems = [
     {
-      'title': 'Annuaire',
-      'icon': Icons.contacts,
-      'route': '/directory',
+      'title': 'Annuaire', // Titre affiché
+      'icon': Icons.contacts, // Icône du service
+      'route': '/directory', // Route de navigation
     },
     {
       'title': 'Rendez-vous',
@@ -54,13 +63,8 @@ class _HomePageState extends State<HomePage> {
     },
     {
       'title': 'Les assurances',
-      'icon': Icons.verified_user,
+      'icon': Icons.shield,
       'route': '/insurances',
-    },
-    {
-      'title': 'Blog',
-      'icon': Icons.article,
-      'route': '/blog',
     },
   ];
 
@@ -69,113 +73,249 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     // Récupération du provider d'authentification
     final authProvider = Provider.of<AuthProvider>(context);
+    
+    // Récupération du nom de l'utilisateur connecté
     final userName = authProvider.currentUser?.name ?? 'Utilisateur';
 
     return Scaffold(
-           appBar: AppBar(
-        title: Text('Bonjour $userName !'), // Titre personnalisé avec le nom
-        leading: IconButton(
-        icon: Icon(Icons.menu), // Icône du menu
-          onPressed: () {
-           Navigator.pushNamed(context, '/menu'); // Navigation vers le menu
-         },
-       ),
+      // Utilisation de l'AppBar personnalisée unifiée
+      appBar: CustomAppBar(
+        title: 'Bonjour $userName !',
+        showMenuButton: true,
       ),
-      body: SingleChildScrollView( // Permet le défilement
-        child: Column(
-          children: [
-            // Section du carrousel d'images
-            CarouselSlider(
-              items: carouselImages.map((imagePath) {
-                return Container(
-                  margin: EdgeInsets.all(5.0), // Marge autour de chaque image
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8.0), // Coins arrondis
-                    image: DecorationImage(
-                      image: AssetImage(imagePath), // Image depuis les assets
-                      fit: BoxFit.cover, // Adaptation de l'image
+      
+      // Menu latéral (drawer)
+      drawer: MenuPage(),
+      
+      // Corps de la page avec structure Column
+      body: Column(
+        children: [
+          // Partie scrollable : carrousel + grille de services
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Section du carrousel d'images
+                  Container(
+                    // Marge autour du carrousel
+                    margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    
+                    // Hauteur fixe du carrousel (ajustée)
+                    height: 140,
+                    
+                    // Décoration : fond vert avec bordures arrondies
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Color(0xFF4CAF50), // Couleur verte
+                    ),
+                    
+                    child: Stack(
+                      children: [
+                        // Widget CarouselSlider pour le diaporama
+                        CarouselSlider(
+                          items: carouselImages.map((imagePath) {
+                            return Container(
+                              // Largeur maximale
+                              width: double.infinity,
+                              
+                              // Décoration du conteneur
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                color: Color(0xFF4CAF50),
+                              ),
+                              
+                              child: ClipRRect(
+                                // Coins arrondis pour le contenu
+                                borderRadius: BorderRadius.circular(12),
+                                
+                                child: Column(
+                                  // Centrage vertical du contenu
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  
+                                  children: [
+                                    // Icône placeholder pour les images (plus petite)
+                                    Icon(
+                                      Icons.image,
+                                      size: 35,
+                                      color: Colors.white.withOpacity(0.5),
+                                    ),
+                                    
+                                    // Espacement réduit
+                                    SizedBox(height: 6),
+                                    
+                                    // Texte promotionnel (plus petit)
+                                    Text(
+                                      'Retrouvez votre Clinique\nCitadelle du cœur, Parakou sur\ngoMediCAL',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.2,
+                                      ),
+                                    ),
+                                    
+                                    // Espacement réduit
+                                    SizedBox(height: 8),
+                                    
+                                    // Bouton d'action "Trouver un hôpital" (plus petit)
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pushNamed(context, '/hospitals');
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white, // Fond blanc
+                                        foregroundColor: Color(0xFF4CAF50), // Texte vert
+                                        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20), // Bouton arrondi
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Trouver un hôpital',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          
+                          // Options du carrousel
+                          options: CarouselOptions(
+                            height: 140, // Hauteur ajustée
+                            autoPlay: true, // Lecture automatique
+                            enlargeCenterPage: false, // Pas d'agrandissement
+                            viewportFraction: 1.0, // Fraction de la vue
+                            autoPlayInterval: Duration(seconds: 5), // Intervalle de 5 secondes
+                            autoPlayAnimationDuration: Duration(milliseconds: 800), // Durée d'animation
+                            
+                            // Callback lors du changement de page
+                            onPageChanged: (index, reason) {
+                              setState(() {
+                                _currentCarouselIndex = index;
+                              });
+                            },
+                          ),
+                        ),
+                        
+                        // Flèche de navigation gauche
+                        Positioned(
+                          left: 10,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: CircleAvatar(
+                              backgroundColor: Colors.black.withOpacity(0.3), // Fond semi-transparent
+                              child: Icon(Icons.chevron_left, color: Colors.white), // Icône blanche
+                            ),
+                          ),
+                        ),
+                        
+                        // Flèche de navigation droite
+                        Positioned(
+                          right: 10,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: CircleAvatar(
+                              backgroundColor: Colors.black.withOpacity(0.3), // Fond semi-transparent
+                              child: Icon(Icons.chevron_right, color: Colors.white), // Icône blanche
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              }).toList(),
-              options: CarouselOptions(
-                height: 180.0, // Hauteur du carrousel
-                autoPlay: true, // Lecture automatique
-                enlargeCenterPage: true, // Agrandissement de l'image centrale
-                aspectRatio: 16/9, // Ratio d'aspect
-                autoPlayCurve: Curves.fastOutSlowIn, // Courbe d'animation
-                enableInfiniteScroll: true, // Défilement infini
-                autoPlayAnimationDuration: Duration(milliseconds: 800), // Durée d'animation
-                viewportFraction: 0.8, // Fraction de la vue
-                onPageChanged: (index, reason) { // Callback du changement de page
-                  setState(() {
-                    _currentCarouselIndex = index; // Mise à jour de l'index
-                  });
-                },
-              ),
-            ),
-            SizedBox(height: 20), // Espacement
-            
-            // Indicateurs de position du carrousel
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center, // Centrage horizontal
-              children: carouselImages.asMap().entries.map((entry) {
-                return Container(
-                  width: 8.0, // Largeur des indicateurs
-                  height: 8.0, // Hauteur des indicateurs
-                  margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0), // Marge
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle, // Forme circulaire
-                    color: _currentCarouselIndex == entry.key // Couleur conditionnelle
-                        ? Theme.of(context).primaryColor // Couleur primaire si actif
-                        : Colors.grey, // Gris si inactif
+                  
+                  // Espacement entre le carrousel et la grille (réduit)
+                  SizedBox(height: 8),
+                  
+                  // Grille des services avec 2 colonnes
+                  Padding(
+                    // Padding horizontal autour de la grille (réduit)
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    
+                    child: GridView.builder(
+                      // Rétrécissement pour s'adapter au contenu
+                      shrinkWrap: true,
+                      
+                      // Désactive le défilement propre (géré par le parent)
+                      physics: NeverScrollableScrollPhysics(),
+                      
+                      // Configuration de la grille
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2, // 2 colonnes
+                        crossAxisSpacing: 8, // Espacement horizontal réduit
+                        mainAxisSpacing: 8, // Espacement vertical réduit
+                        childAspectRatio: 1.4, // Ratio augmenté pour cartes plus plates
+                      ),
+                      
+                      // Nombre total d'éléments
+                      itemCount: homeItems.length,
+                      
+                      // Construction de chaque carte de service
+                      itemBuilder: (context, index) {
+                        final item = homeItems[index];
+                        
+                        // Utilisation du widget ServiceCard réutilisable
+                        return ServiceCard(
+                          title: item['title'], // Titre du service
+                          icon: item['icon'], // Icône du service
+                          route: item['route'], // Route de navigation
+                        );
+                      },
+                    ),
                   ),
-                );
-              }).toList(),
-            ),
-            SizedBox(height: 20), // Espacement
-            
-            // Grille des services de l'application
-            GridView.builder(
-              shrinkWrap: true, // Rétrécissement pour s'adapter au contenu
-              physics: NeverScrollableScrollPhysics(), // Désactive le défilement propre
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, // 3 colonnes
-                crossAxisSpacing: 10, // Espacement horizontal entre les éléments
-                mainAxisSpacing: 10, // Espacement vertical entre les éléments
-                childAspectRatio: 0.9, // Ratio largeur/hauteur des enfants
+                  
+                  // Espacement en bas de la grille (réduit)
+                  SizedBox(height: 12),
+                ],
               ),
-              itemCount: homeItems.length, // Nombre d'éléments
-              itemBuilder: (context, index) {
-                return _buildServiceItem(homeItems[index]); // Construction de chaque élément
+            ),
+          ),
+          
+          // Bouton fixe en bas : "PRENDRE UN RENDEZ-VOUS"
+          Container(
+            // Largeur maximale (bord à bord)
+            width: double.infinity,
+            
+            child: ElevatedButton(
+              // Action au clic : navigation vers la page des rendez-vous
+              onPressed: () {
+                Navigator.pushNamed(context, '/appointments');
               },
+              
+              // Style du bouton
+              style: ElevatedButton.styleFrom(
+                // Couleur de fond verte
+                backgroundColor: Color(0xFF4CAF50),
+                
+                // Padding vertical pour la hauteur
+                padding: EdgeInsets.symmetric(vertical: 18),
+                
+                // Forme : coins carrés (pas de borderRadius)
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(0),
+                ),
+                
+                // Élévation pour l'ombre
+                elevation: 8,
+              ),
+              
+              // Texte du bouton
+              child: Text(
+                'PRENDRE UN RENDEZ-VOUS',
+                style: TextStyle(
+                  color: Colors.white, // Couleur du texte blanc
+                  fontSize: 18, // Taille de la police
+                  fontWeight: FontWeight.bold, // Texte en gras
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Méthode pour construire un élément de service
-  Widget _buildServiceItem(Map<String, dynamic> item) {
-    return Card(
-      elevation: 2, // Élévation de la carte
-      child: InkWell( // Effet de clic
-        onTap: () {
-          Navigator.pushNamed(context, item['route']); // Navigation vers la route
-        },
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Centrage vertical
-          children: [
-            Icon(item['icon'], size: 30, color: Theme.of(context).primaryColor), // Icône
-            SizedBox(height: 8), // Espacement
-            Text(
-              item['title'], // Titre du service
-              textAlign: TextAlign.center, // Centrage du texte
-              style: TextStyle(fontSize: 12), // Taille de police réduite
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -125,7 +125,12 @@ class FirebaseUserService implements UserService {
         'dateOfBirth': user.dateOfBirth != null 
             ? Timestamp.fromDate(user.dateOfBirth!)
             : null,
+        // CHAMPS MÉDICAUX AJOUTÉS
+        'bloodType': user.bloodType,
+        'allergies': user.allergies,
+        'emergencyContact': user.emergencyContact,
         'medicalHistory': user.medicalHistory,
+        'profession': user.profession,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 

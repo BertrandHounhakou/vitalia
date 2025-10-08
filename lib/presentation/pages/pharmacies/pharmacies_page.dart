@@ -4,6 +4,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:vitalia/presentation/providers/location_provider.dart';
 import 'package:vitalia/presentation/widgets/pharmacy_card.dart';
+import 'package:vitalia/presentation/pages/menu/menu_page.dart';
+import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
 
 // Classe pour la page des pharmacies avec état
 class PharmaciesPage extends StatefulWidget {
@@ -147,15 +149,14 @@ class _PharmaciesPageState extends State<PharmaciesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Pharmacies'), // Titre de la page
-        leading: IconButton(
-          icon: Icon(Icons.menu), // Icône du menu
-          onPressed: () {
-            Navigator.pushNamed(context, '/menu'); // Navigation vers le menu
-          },
-        ),
+      // Utilisation de l'AppBar personnalisée unifiée
+      appBar: CustomAppBar(
+        title: 'Pharmacies',
+        showMenuButton: true,
       ),
+      
+      // Menu latéral
+      drawer: MenuPage(),
       body: Column(
         children: [
           // Barre de recherche
