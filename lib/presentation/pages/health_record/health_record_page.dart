@@ -82,14 +82,14 @@ class _HealthRecordPageState extends State<HealthRecordPage> {
 
                   SizedBox(height: 12),
 
-                  // Grille des constantes médicales (3 colonnes, cartes compactes)
+                  // Grille des constantes médicales (3 colonnes, cartes très compactes)
                   GridView.count(
                     shrinkWrap: true,
                     physics: NeverScrollableScrollPhysics(),
                     crossAxisCount: 3, // 3 colonnes
-                    crossAxisSpacing: 6,
-                    mainAxisSpacing: 6,
-                    childAspectRatio: 0.95,
+                    crossAxisSpacing: 5,
+                    mainAxisSpacing: 5,
+                    childAspectRatio: 1.0,
                     children: [
                       // Carte Groupe sanguin
                       _buildCompactConstantCard(
@@ -217,29 +217,29 @@ class _HealthRecordPageState extends State<HealthRecordPage> {
     required String value,
   }) {
     return Card(
-      elevation: 2,
+      elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(6),
       ),
       child: Padding(
-        padding: EdgeInsets.all(6),
+        padding: EdgeInsets.all(4),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icône (réduite)
+            // Icône (très petite)
             Icon(
               icon,
-              size: 24,
+              size: 20,
               color: iconColor,
             ),
 
-            SizedBox(height: 4),
+            SizedBox(height: 3),
 
-            // Valeur principale (réduite)
+            // Valeur principale (plus petite)
             Text(
               value,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
@@ -250,11 +250,11 @@ class _HealthRecordPageState extends State<HealthRecordPage> {
 
             SizedBox(height: 2),
 
-            // Libellé (plus petit)
+            // Libellé (très petit)
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 9,
+                fontSize: 8,
                 color: Colors.grey[600],
               ),
               textAlign: TextAlign.center,

@@ -627,8 +627,26 @@ class _RegisterPageState extends State<RegisterPage> {
         // NAVIGATION CORRIGÉE - Attendre que le snackbar soit affiché
         await Future.delayed(Duration(milliseconds: 2000));
         
-        // Navigation vers la page d'accueil après inscription réussie
-        Navigator.pushReplacementNamed(context, '/home');
+        // Navigation selon le rôle de l'utilisateur créé
+        final currentUser = authProvider.currentUser;
+        
+        if (currentUser != null) {
+          switch (currentUser.role) {
+            case 'patient':
+              Navigator.pushReplacementNamed(context, '/home');
+              break;
+            case 'center':
+              Navigator.pushReplacementNamed(context, '/center/home');
+              break;
+            case 'admin':
+              Navigator.pushReplacementNamed(context, '/admin/home');
+              break;
+            default:
+              Navigator.pushReplacementNamed(context, '/home');
+          }
+        } else {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
         
       } catch (e) {
         // Gestion des erreurs d'inscription

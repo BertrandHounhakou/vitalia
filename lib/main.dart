@@ -42,6 +42,18 @@ import 'presentation/pages/profile/personal_info_page.dart';
 import 'presentation/pages/profile/medical_constants_page.dart';
 import 'presentation/pages/profile/insurance_detail_page.dart';
 import 'presentation/pages/health_record/health_record_page.dart';
+
+// Import des pages Centre de santé
+import 'presentation/pages/center/center_home_page.dart';
+import 'presentation/pages/center/add_consultation_page.dart';
+import 'presentation/pages/center/patients_list_page.dart';
+import 'presentation/pages/center/patient_history_page.dart';
+import 'presentation/pages/center/center_appointments_page.dart';
+
+// Import des pages Administrateur
+import 'presentation/pages/admin/admin_home_page.dart';
+import 'presentation/pages/admin/create_user_page.dart';
+import 'presentation/pages/admin/users_list_page.dart';
 //import 'presentation/pages/insurances/insurances_page.dart';
 //import 'presentation/pages/directory/directory_page.dart';
 
@@ -172,6 +184,18 @@ class VitaliaApp extends StatelessWidget {
           // Pages supplémentaires
           //'/directory': (context) => const DirectoryPage(),
           '/insurances': (context) => const InsurancesPage(),
+
+          // Routes Centre de santé
+          '/center/home': (context) => const CenterHomePage(),
+          '/center/add-consultation': (context) => const AddConsultationPage(),
+          '/center/patients': (context) => const PatientsListPage(),
+          '/center/appointments': (context) => const CenterAppointmentsPage(),
+
+          // Routes Administrateur
+          '/admin/home': (context) => const AdminHomePage(),
+          '/admin/users': (context) => const UsersListPage(),
+          '/admin/create-center': (context) => const CreateUserPage(userType: 'center'),
+          '/admin/create-patient': (context) => const CreateUserPage(userType: 'patient'),
         },
 
         // Gestion des routes inconnues (404)

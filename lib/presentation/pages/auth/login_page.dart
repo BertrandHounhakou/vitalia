@@ -293,8 +293,26 @@ class _LoginPageState extends State<LoginPage> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signIn(email, password);
       
-      // Navigation vers la page d'accueil
-      Navigator.pushReplacementNamed(context, '/home');
+      // Navigation selon le rôle de l'utilisateur
+      final user = authProvider.currentUser;
+      
+      if (user != null) {
+        switch (user.role) {
+          case 'patient':
+            Navigator.pushReplacementNamed(context, '/home');
+            break;
+          case 'center':
+            Navigator.pushReplacementNamed(context, '/center/home');
+            break;
+          case 'admin':
+            Navigator.pushReplacementNamed(context, '/admin/home');
+            break;
+          default:
+            Navigator.pushReplacementNamed(context, '/home');
+        }
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
       
     } catch (e) {
       setState(() {
