@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vitalia/presentation/providers/auth_provider.dart';
+import 'package:vitalia/presentation/pages/menu/center_menu_page.dart';
+import 'package:vitalia/presentation/pages/menu/admin_menu_page.dart';
 
 /// Classe pour la page du menu latéral (sans état)
 /// Affiche le menu avec en-tête dégradé et fond blanc pour les éléments
@@ -13,6 +15,15 @@ class MenuPage extends StatelessWidget {
     // Récupération du provider d'authentification
     final authProvider = Provider.of<AuthProvider>(context);
     final currentUser = authProvider.currentUser;
+    
+    // Redirection vers le bon menu selon le rôle
+    if (currentUser?.role == 'center') {
+      return CenterMenuPage();
+    }
+    
+    if (currentUser?.role == 'admin') {
+      return AdminMenuPage();
+    }
 
     return Drawer(
       // Largeur fixe à 78% pour ne jamais couvrir totalement la page
@@ -102,7 +113,7 @@ class MenuPage extends StatelessWidget {
                     title: 'Accueil',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/home');
+                      Navigator.pushReplacementNamed(context, '/patient-home');
                     },
                   ),
 
@@ -111,7 +122,10 @@ class MenuPage extends StatelessWidget {
                     context: context,
                     icon: Icons.contacts,
                     title: 'Annuaire',
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/directory');
+                    },
                   ),
 
                   // Élément de menu pour les rendez-vous

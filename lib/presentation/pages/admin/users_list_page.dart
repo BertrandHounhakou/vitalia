@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
 import 'package:vitalia/core/services/firebase_user_service.dart';
 import 'package:vitalia/data/models/user_model.dart';
+import 'package:vitalia/presentation/pages/admin/user_details_page.dart';
 
 /// Page de liste et gestion de tous les utilisateurs
 /// Accessible uniquement aux administrateurs
@@ -291,7 +292,15 @@ class _UsersListPageState extends State<UsersListPage>
             ),
           ],
           onSelected: (value) {
-            if (value == 'delete') {
+            if (value == 'view') {
+              // Navigation vers la page de détails
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserDetailsPage(user: user),
+                ),
+              );
+            } else if (value == 'delete') {
               _deleteUser(user);
             }
           },

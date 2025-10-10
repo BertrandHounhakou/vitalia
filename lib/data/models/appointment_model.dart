@@ -1,6 +1,7 @@
 // Import des packages nécessaires
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Partie générée par Hive
 part 'appointment_model.g.dart';
@@ -74,5 +75,32 @@ class AppointmentModel {
       'status': status,
       'notes': notes,
     };
+  }
+
+  // Méthode toFirestore pour sauvegarder dans Firestore
+  Map<String, dynamic> toFirestore() {
+    return {
+      'id': id,
+      'patientId': patientId,
+      'centerId': centerId,
+      'dateTime': Timestamp.fromDate(dateTime),
+      'status': status,
+      'notes': notes,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
+  // Méthode fromFirestore pour charger depuis Firestore
+  factory AppointmentModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return AppointmentModel(
+      id: data['id'] ?? doc.id,
+      patientId: data['patientId'] ?? '',
+      centerId: data['centerId'] ?? '',
+      dateTime: (data['dateTime'] as Timestamp).toDate(),
+      status: data['status'] ?? 'scheduled',
+      notes: data['notes'],
+    );
   }
 }

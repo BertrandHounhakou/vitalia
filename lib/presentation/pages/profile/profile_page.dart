@@ -1,5 +1,7 @@
 // Import des packages Flutter
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:vitalia/presentation/providers/auth_provider.dart';
 import 'package:vitalia/presentation/pages/profile/insurance_detail_page.dart';
 import 'package:vitalia/presentation/pages/menu/menu_page.dart';
 import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
@@ -31,6 +33,39 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
   // Construction de l'interface de la page de profil
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final userRole = authProvider.currentUser?.role ?? 'patient';
+
+    // Redirection automatique selon le rôle
+    if (userRole == 'center') {
+      // Pour les centres de santé, rediriger vers leur page de profil
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, '/center/profile');
+      });
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF26A69A)),
+          ),
+        ),
+      );
+    }
+
+    if (userRole == 'admin') {
+      // Pour les administrateurs, rediriger vers leur page de profil
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, '/admin/profile');
+      });
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF26A69A)),
+          ),
+        ),
+      );
+    }
+
+    // Affichage du profil patient
     return Scaffold(
       // AppBar personnalisée avec dégradé (avec bouton MENU)
       appBar: CustomAppBar(

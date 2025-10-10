@@ -6,8 +6,12 @@ import 'package:vitalia/presentation/providers/auth_provider.dart';
 import 'package:vitalia/presentation/pages/profile/medical_constants_page.dart';
 import 'package:vitalia/presentation/pages/menu/menu_page.dart';
 import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
+import 'package:vitalia/core/services/consultation_service.dart';
+import 'package:vitalia/data/models/consultation_model.dart';
 
 /// Page du carnet de santé affichant les constantes médicales et l'historique des consultations
+/// LECTURE SEULE - Les patients ne peuvent PAS modifier ou ajouter des consultations
+/// Seuls les centres de santé peuvent ajouter des consultations
 class HealthRecordPage extends StatefulWidget {
   const HealthRecordPage({Key? key}) : super(key: key);
 
@@ -17,28 +21,69 @@ class HealthRecordPage extends StatefulWidget {
 
 /// État de la page du carnet de santé
 class _HealthRecordPageState extends State<HealthRecordPage> {
-  // Liste des consultations (historique persistant)
-  final List<Map<String, dynamic>> _consultations = [
-    // Exemples de consultations - Ces données devraient venir de Firebase
-    {
-      'date': DateTime(2024, 3, 15, 10, 30),
-      'doctorName': 'Dr. Dupont',
-      'reason': 'Consultation de routine',
-      'notes': 'Tout va bien, bon état général',
-    },
-    {
-      'date': DateTime(2024, 2, 20, 14, 15),
-      'doctorName': 'Dr. Martin',
-      'reason': 'Suivi traitement',
-      'notes': 'Traitement efficace, continuer',
-    },
-  ];
+  // Service de consultation
+  final ConsultationService _consultationService = ConsultationService();
+  
+  // Liste des consultations chargées depuis Firestore
+  List<ConsultationModel> _consultations = [];
+  
+  // Indicateur de chargement
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConsultations();
+  }
+
+  /// Charger les consultations du patient depuis Firestore
+  Future<void> _loadConsultations() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.currentUser?.id;
+
+      if (userId != null) {
+        final consultations = await _consultationService.getPatientConsultations(userId);
+        setState(() {
+          _consultations = consultations;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Erreur lors du chargement des consultations: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors du chargement des consultations'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     // Récupération de l'utilisateur connecté et de ses constantes médicales
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
+
+    // Affichage de l'indicateur de chargement pendant le chargement des consultations
+    if (_isLoading) {
+      return Scaffold(
+        appBar: CustomAppBar(
+          title: 'Mon carnet de santé',
+          showMenuButton: true,
+        ),
+        drawer: MenuPage(),
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF26A69A)),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       // Utilisation de l'AppBar personnalisée unifiée
@@ -186,7 +231,7 @@ class _HealthRecordPageState extends State<HealthRecordPage> {
                       ? _buildEmptyConsultationsMessage()
                       : Column(
                           children: _consultations.map((consultation) {
-                            return _buildConsultationCard(consultation);
+                            return _buildConsultationCardFromModel(consultation);
                           }).toList(),
                         ),
                 ],
@@ -196,15 +241,8 @@ class _HealthRecordPageState extends State<HealthRecordPage> {
         ),
       ),
 
-      // Bouton flottant pour ajouter une consultation
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showAddConsultationDialog();
-        },
-        backgroundColor: Color(0xFF2A9D8F),
-        child: Icon(Icons.add),
-        tooltip: 'Ajouter une consultation',
-      ),
+      // PAS DE BOUTON D'AJOUT - Lecture seule pour les patients
+      // Seuls les centres de santé peuvent ajouter des consultations
     );
   }
 
@@ -267,109 +305,120 @@ class _HealthRecordPageState extends State<HealthRecordPage> {
     );
   }
 
-  /// Widget pour construire une carte de consultation
-  Widget _buildConsultationCard(Map<String, dynamic> consultation) {
-    final date = consultation['date'] as DateTime;
-    final formattedDate = DateFormat('dd/MM/yyyy').format(date);
-    final formattedTime = DateFormat('HH:mm').format(date);
+  /// Widget pour construire une carte de consultation depuis le modèle Firestore
+  Widget _buildConsultationCardFromModel(ConsultationModel consultation) {
+    final formattedDate = DateFormat('dd/MM/yyyy').format(consultation.dateTime);
+    final formattedTime = DateFormat('HH:mm').format(consultation.dateTime);
 
     return Card(
       margin: EdgeInsets.only(bottom: 12),
       elevation: 2,
-      child: Padding(
-        padding: EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Icône avec fond coloré
-            Container(
-              padding: EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Color(0xFF2A9D8F).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => _showConsultationDetails(consultation),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icône avec fond coloré
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Color(0xFF2A9D8F).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.medical_services,
+                  color: Color(0xFF2A9D8F),
+                  size: 24,
+                ),
               ),
-              child: Icon(
-                Icons.medical_services,
-                color: Color(0xFF2A9D8F),
-                size: 24,
-              ),
-            ),
 
-            SizedBox(width: 12),
+              SizedBox(width: 12),
 
-            // Informations de la consultation
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Nom du docteur
-                  Text(
-                    consultation['doctorName'] ?? 'Docteur',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-
-                  SizedBox(height: 4),
-
-                  // Date et heure
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Text(
-                        formattedDate,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Icon(Icons.access_time, size: 14, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Text(
-                        formattedTime,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: 6),
-
-                  // Raison de la consultation
-                  Text(
-                    consultation['reason'] ?? '',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-
-                  // Notes si disponibles
-                  if (consultation['notes'] != null &&
-                      consultation['notes'].toString().isNotEmpty) ...[
-                    SizedBox(height: 4),
+              // Informations de la consultation
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Nom du docteur
                     Text(
-                      consultation['notes'],
+                      consultation.doctorName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+
+                    SizedBox(height: 4),
+
+                    // Date et heure
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                        SizedBox(width: 4),
+                        Text(
+                          formattedDate,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Icon(Icons.access_time, size: 14, color: Colors.grey),
+                        SizedBox(width: 4),
+                        Text(
+                          formattedTime,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 6),
+
+                    // Raison de la consultation
+                    Text(
+                      consultation.reason,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+
+                    SizedBox(height: 4),
+
+                    // Diagnostic
+                    Text(
+                      'Diagnostic: ${consultation.diagnosis}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
-                        fontStyle: FontStyle.italic,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+
+                    // Badge "Voir détails"
+                    SizedBox(height: 6),
+                    Text(
+                      'Appuyez pour voir les détails',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF2A9D8F),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -410,82 +459,129 @@ class _HealthRecordPageState extends State<HealthRecordPage> {
     );
   }
 
-  /// Dialog pour ajouter une consultation
-  void _showAddConsultationDialog() {
-    final TextEditingController doctorController = TextEditingController();
-    final TextEditingController reasonController = TextEditingController();
-    final TextEditingController notesController = TextEditingController();
-
+  /// Afficher les détails complets d'une consultation (lecture seule)
+  void _showConsultationDetails(ConsultationModel consultation) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Ajouter une consultation'),
+          title: Row(
+            children: [
+              Icon(Icons.medical_services, color: Color(0xFF2A9D8F)),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Détails de la consultation',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            ],
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: doctorController,
-                  decoration: InputDecoration(
-                    labelText: 'Nom du docteur',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person),
-                  ),
+                _buildDetailRow('Docteur', consultation.doctorName, Icons.person),
+                Divider(),
+                _buildDetailRow(
+                  'Date',
+                  DateFormat('dd/MM/yyyy à HH:mm').format(consultation.dateTime),
+                  Icons.calendar_today,
                 ),
-                SizedBox(height: 12),
-                TextField(
-                  controller: reasonController,
-                  decoration: InputDecoration(
-                    labelText: 'Raison de la consultation',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.medical_services),
+                Divider(),
+                _buildDetailRow('Motif', consultation.reason, Icons.notes),
+                Divider(),
+                _buildDetailRow('Diagnostic', consultation.diagnosis, Icons.medical_information),
+                
+                if (consultation.treatment != null) ...[
+                  Divider(),
+                  _buildDetailRow('Traitement', consultation.treatment!, Icons.medication),
+                ],
+                
+                if (consultation.prescription != null) ...[
+                  Divider(),
+                  _buildDetailRow('Ordonnance', consultation.prescription!, Icons.description),
+                ],
+                
+                if (consultation.notes != null) ...[
+                  Divider(),
+                  _buildDetailRow('Notes', consultation.notes!, Icons.note_alt),
+                ],
+
+                // Affichage des constantes vitales si disponibles
+                if (consultation.vitalSigns != null && consultation.vitalSigns!.isNotEmpty) ...[
+                  SizedBox(height: 16),
+                  Text(
+                    'Constantes vitales',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2A9D8F),
+                    ),
                   ),
-                ),
-                SizedBox(height: 12),
-                TextField(
-                  controller: notesController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: 'Notes (optionnel)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.note),
-                  ),
-                ),
+                  SizedBox(height: 8),
+                  ...consultation.vitalSigns!.entries.map((entry) {
+                    return Padding(
+                      padding: EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.favorite, size: 16, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text(
+                            '${entry.key}: ${entry.value}',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
               ],
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (doctorController.text.isNotEmpty &&
-                    reasonController.text.isNotEmpty) {
-                  setState(() {
-                    _consultations.insert(0, {
-                      'date': DateTime.now(),
-                      'doctorName': doctorController.text,
-                      'reason': reasonController.text,
-                      'notes': notesController.text,
-                    });
-                  });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Consultation ajoutée avec succès'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-              child: Text('Ajouter'),
+              child: Text('Fermer'),
             ),
           ],
         );
       },
+    );
+  }
+
+  /// Widget helper pour afficher une ligne de détail
+  Widget _buildDetailRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: Colors.grey[600]),
+              SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

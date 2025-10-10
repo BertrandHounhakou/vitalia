@@ -52,9 +52,9 @@ class ServiceCard extends StatelessWidget {
             children: [
               // Conteneur pour l'icône avec fond coloré
               Container(
-                // Dimensions du conteneur d'icône (réduites)
-                width: 40,
-                height: 40,
+                // Dimensions du conteneur d'icône (augmentées)
+                width: 50,
+                height: 50,
                 
                 // Décoration : fond gris clair avec bordures arrondies
                 decoration: BoxDecoration(
@@ -66,21 +66,21 @@ class ServiceCard extends StatelessWidget {
                   // Icône du service
                   child: Icon(
                     icon,
-                    size: 22, // Taille de l'icône réduite
+                    size: 28, // Taille de l'icône augmentée
                     color: Color(0xFF2A9D8F), // Couleur vert-bleu
                   ),
                 ),
               ),
               
-              // Espacement entre l'icône et le texte (réduit)
-              SizedBox(height: 4),
+              // Espacement entre l'icône et le texte (augmenté)
+              SizedBox(height: 6),
               
               // Titre du service
               Text(
                 title,
                 textAlign: TextAlign.center, // Centrage du texte
                 style: TextStyle(
-                  fontSize: 10, // Taille de la police réduite
+                  fontSize: 12, // Taille de la police augmentée
                   fontWeight: FontWeight.w500, // Épaisseur moyenne
                   color: Colors.black87, // Couleur du texte
                 ),

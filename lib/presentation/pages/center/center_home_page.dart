@@ -4,9 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:vitalia/presentation/providers/auth_provider.dart';
 import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
 import 'package:vitalia/presentation/pages/menu/center_menu_page.dart';
+import 'package:vitalia/core/services/consultation_service.dart';
+import 'package:vitalia/core/services/appointment_service.dart';
+import 'package:vitalia/data/models/consultation_model.dart';
+import 'package:vitalia/data/models/appointment_model.dart';
 
 /// Page d'accueil pour les Centres de santé
-/// Dashboard affichant les statistiques et les actions rapides
+/// Dashboard affichant les statistiques réelles depuis Firestore
 class CenterHomePage extends StatefulWidget {
   const CenterHomePage({Key? key}) : super(key: key);
 
@@ -15,13 +19,97 @@ class CenterHomePage extends StatefulWidget {
 }
 
 class _CenterHomePageState extends State<CenterHomePage> {
-  // Statistiques du centre (simulées - à remplacer par des données Firebase)
-  final Map<String, int> _stats = {
-    'consultationsToday': 12,
-    'appointmentsToday': 8,
-    'patientsTotal': 245,
-    'pendingAppointments': 5,
+  // Services
+  final ConsultationService _consultationService = ConsultationService();
+  final AppointmentService _appointmentService = AppointmentService();
+  
+  // Statistiques du centre (chargées depuis Firestore)
+  Map<String, int> _stats = {
+    'consultationsToday': 0,
+    'appointmentsToday': 0,
+    'patientsTotal': 0,
+    'pendingAppointments': 0,
   };
+  
+  // Indicateur de chargement
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatistics();
+  }
+
+  /// Charger les statistiques réelles depuis Firestore
+  Future<void> _loadStatistics() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final centerId = authProvider.currentUser?.id;
+
+      if (centerId == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      print('📊 Chargement des statistiques du centre $centerId...');
+
+      // Charger toutes les consultations du centre
+      final consultations = await _consultationService.getCenterConsultations(centerId);
+      
+      // Charger tous les rendez-vous du centre
+      final appointments = await _appointmentService.getCenterAppointments(centerId);
+
+      // Calculer les statistiques
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final tomorrow = today.add(Duration(days: 1));
+
+      // Consultations aujourd'hui
+      final consultationsToday = consultations.where((c) {
+        final cDate = DateTime(c.dateTime.year, c.dateTime.month, c.dateTime.day);
+        return cDate.isAtSameMomentAs(today);
+      }).length;
+
+      // Rendez-vous aujourd'hui
+      final appointmentsToday = appointments.where((a) {
+        final aDate = DateTime(a.dateTime.year, a.dateTime.month, a.dateTime.day);
+        return aDate.isAtSameMomentAs(today);
+      }).length;
+
+      // Total patients uniques (depuis consultations ET rendez-vous)
+      final patientsFromConsultations = consultations.map((c) => c.patientId).toSet();
+      final patientsFromAppointments = appointments.map((a) => a.patientId).toSet();
+      
+      // Union des deux ensembles pour avoir tous les patients uniques
+      final allUniquePatients = {...patientsFromConsultations, ...patientsFromAppointments};
+      final uniquePatients = allUniquePatients.length;
+
+      // Rendez-vous en attente (scheduled ou confirmed)
+      final pendingAppointments = appointments.where((a) {
+        return (a.status == 'scheduled' || a.status == 'confirmed') && 
+               a.dateTime.isAfter(now);
+      }).length;
+
+      setState(() {
+        _stats = {
+          'consultationsToday': consultationsToday,
+          'appointmentsToday': appointmentsToday,
+          'patientsTotal': uniquePatients,
+          'pendingAppointments': pendingAppointments,
+        };
+        _isLoading = false;
+      });
+
+      print('✅ Statistiques chargées: $_stats');
+    } catch (e) {
+      print('❌ Erreur chargement statistiques: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,35 +127,59 @@ class _CenterHomePageState extends State<CenterHomePage> {
       // Menu latéral personnalisé pour Centre de santé
       drawer: CenterMenuPage(),
 
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Titre de bienvenue
-            Text(
-              'Tableau de bord',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF26A69A)),
               ),
-            ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadStatistics,
+              child: SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Titre de bienvenue
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Tableau de bord',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Statistiques en temps réel',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.refresh, color: Color(0xFF26A69A)),
+                          onPressed: _loadStatistics,
+                          tooltip: 'Actualiser',
+                        ),
+                      ],
+                    ),
 
-            SizedBox(height: 8),
+                    SizedBox(height: 24),
 
-            Text(
-              'Gestion des consultations et rendez-vous',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-
-            SizedBox(height: 24),
-
-            // Grille des statistiques (2x2)
-            GridView.count(
+                    // Grille des statistiques (2x2)
+                    GridView.count(
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
@@ -75,7 +187,7 @@ class _CenterHomePageState extends State<CenterHomePage> {
               mainAxisSpacing: 12,
               childAspectRatio: 1.3,
               children: [
-                // Consultations du jour
+                // Consultations du jour (DONNÉES RÉELLES)
                 _buildStatCard(
                   title: 'Consultations',
                   subtitle: "Aujourd'hui",
@@ -84,7 +196,7 @@ class _CenterHomePageState extends State<CenterHomePage> {
                   color: Colors.blue,
                 ),
 
-                // Rendez-vous du jour
+                // Rendez-vous du jour (DONNÉES RÉELLES)
                 _buildStatCard(
                   title: 'Rendez-vous',
                   subtitle: "Aujourd'hui",
@@ -93,7 +205,7 @@ class _CenterHomePageState extends State<CenterHomePage> {
                   color: Colors.green,
                 ),
 
-                // Total patients
+                // Total patients uniques (DONNÉES RÉELLES)
                 _buildStatCard(
                   title: 'Patients',
                   subtitle: 'Total',
@@ -102,7 +214,7 @@ class _CenterHomePageState extends State<CenterHomePage> {
                   color: Colors.orange,
                 ),
 
-                // RDV en attente
+                // RDV en attente (DONNÉES RÉELLES)
                 _buildStatCard(
                   title: 'En attente',
                   subtitle: 'Rendez-vous',
@@ -132,7 +244,11 @@ class _CenterHomePageState extends State<CenterHomePage> {
               title: 'Ajouter une consultation',
               icon: Icons.add_circle,
               color: Color(0xFF2A9D8F),
-              onTap: () => Navigator.pushNamed(context, '/center/add-consultation'),
+              onTap: () async {
+                await Navigator.pushNamed(context, '/center/add-consultation');
+                // Recharger les statistiques après ajout
+                _loadStatistics();
+              },
             ),
 
             SizedBox(height: 12),
@@ -141,7 +257,11 @@ class _CenterHomePageState extends State<CenterHomePage> {
               title: 'Gérer les rendez-vous',
               icon: Icons.event_available,
               color: Color(0xFF1E88E5),
-              onTap: () => Navigator.pushNamed(context, '/center/appointments'),
+              onTap: () async {
+                await Navigator.pushNamed(context, '/center/appointments');
+                // Recharger les statistiques après gestion
+                _loadStatistics();
+              },
             ),
 
             SizedBox(height: 12),
@@ -162,8 +282,9 @@ class _CenterHomePageState extends State<CenterHomePage> {
               onTap: () => Navigator.pushNamed(context, '/center/consultations'),
             ),
           ],
-        ),
-      ),
+                ),
+              ),
+            ),
     );
   }
 

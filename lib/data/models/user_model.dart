@@ -63,6 +63,16 @@ class UserModel {
   @HiveField(18)
   final String? profession;
 
+  // CHAMPS SPÉCIFIQUES AUX CENTRES DE SANTÉ
+  @HiveField(19)
+  final List<String>? specialties; // Spécialités médicales disponibles
+  
+  @HiveField(20)
+  final String? description; // Description du centre
+  
+  @HiveField(21)
+  final String? openingHours; // Horaires d'ouverture
+
   UserModel({
     required this.id,
     required this.name,
@@ -84,6 +94,10 @@ class UserModel {
     this.medicalHistory,
     this.emailVerified = false,
     this.profession,
+    // CHAMPS POUR CENTRES
+    this.specialties,
+    this.description,
+    this.openingHours,
   });
 
   // Méthode copyWith améliorée avec tous les champs
@@ -107,6 +121,9 @@ class UserModel {
     String? medicalHistory,
     bool? emailVerified,
     String? profession,
+    List<String>? specialties,
+    String? description,
+    String? openingHours,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -128,6 +145,9 @@ class UserModel {
       medicalHistory: medicalHistory ?? this.medicalHistory,
       emailVerified: emailVerified ?? this.emailVerified,
       profession: profession ?? this.profession,
+      specialties: specialties ?? this.specialties,
+      description: description ?? this.description,
+      openingHours: openingHours ?? this.openingHours,
     );
   }
 
@@ -151,6 +171,9 @@ class UserModel {
       'medicalHistory': medicalHistory,
       'emailVerified': emailVerified,
       'profession': profession,
+      'specialties': specialties,
+      'description': description,
+      'openingHours': openingHours,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.now(),
     };
@@ -177,6 +200,9 @@ class UserModel {
       medicalHistory: data['medicalHistory'],
       emailVerified: data['emailVerified'] ?? false,
       profession: data['profession'],
+      specialties: data['specialties'] != null ? List<String>.from(data['specialties']) : null,
+      description: data['description'],
+      openingHours: data['openingHours'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -199,6 +225,9 @@ class UserModel {
       'medicalHistory': medicalHistory,
       'emailVerified': emailVerified,
       'profession': profession,
+      'specialties': specialties,
+      'description': description,
+      'openingHours': openingHours,
       'updatedAt': Timestamp.now(),
     };
   }

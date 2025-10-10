@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 // Import du widget d'écran d'onboarding
 import 'onboarding_screen.dart';
+import 'package:vitalia/presentation/widgets/auth_guard.dart';
 
 // Classe pour la page d'onboarding avec état
 class OnboardingPage extends StatefulWidget {
@@ -91,7 +92,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor,
+                  color: Color(0xFF26A69A),
                 ),
               ),
             ),

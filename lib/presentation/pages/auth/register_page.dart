@@ -33,6 +33,13 @@ class _RegisterPageState extends State<RegisterPage> {
   // Variable pour suivre le type d'utilisateur (patient, centre, admin)
   String _userType = 'patient';
   
+  // Variables pour gérer la visibilité des mots de passe
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  
+  // Variable pour gérer l'acceptation des conditions d'utilisation
+  bool _acceptTerms = false;
+  
   // Indicateur de chargement pendant l'inscription
   bool _isLoading = false;
 
@@ -408,7 +415,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 child: TextFormField(
                                   controller: _passwordController,
                                   style: TextStyle(color: Colors.white), // Texte en blanc
-                                  obscureText: true, // Masquer le texte (pour les mots de passe)
+                                  obscureText: _obscurePassword, // Masquer/afficher le texte
                                   decoration: InputDecoration(
                                     labelText: 'Mot de passe', // Label du champ
                                     labelStyle: TextStyle(color: Colors.white), // Label en blanc
@@ -416,6 +423,22 @@ class _RegisterPageState extends State<RegisterPage> {
                                     enabledBorder: InputBorder.none, // PAS DE BORDURE QUAND ACTIVÉ
                                     focusedBorder: InputBorder.none, // PAS DE BORDURE QUAND FOCUS
                                     prefixIcon: Icon(Icons.lock, color: Colors.white), // Icône blanche
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword 
+                                            ? Icons.visibility_off 
+                                            : Icons.visibility,
+                                        color: Colors.white.withOpacity(0.8),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
+                                      },
+                                      tooltip: _obscurePassword 
+                                          ? 'Afficher le mot de passe' 
+                                          : 'Masquer le mot de passe',
+                                    ),
                                     filled: false, // FOND TRANSPARENT
                                   ),
                                   validator: (value) { // Validation du champ
@@ -440,7 +463,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 child: TextFormField(
                                   controller: _confirmPasswordController,
                                   style: TextStyle(color: Colors.white), // Texte en blanc
-                                  obscureText: true, // Masquer le texte
+                                  obscureText: _obscureConfirmPassword, // Masquer/afficher le texte
                                   decoration: InputDecoration(
                                     labelText: 'Confirmer le mot de passe', // Label du champ
                                     labelStyle: TextStyle(color: Colors.white), // Label en blanc
@@ -448,6 +471,22 @@ class _RegisterPageState extends State<RegisterPage> {
                                     enabledBorder: InputBorder.none, // PAS DE BORDURE QUAND ACTIVÉ
                                     focusedBorder: InputBorder.none, // PAS DE BORDURE QUAND FOCUS
                                     prefixIcon: Icon(Icons.lock_outline, color: Colors.white), // Icône blanche
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscureConfirmPassword 
+                                            ? Icons.visibility_off 
+                                            : Icons.visibility,
+                                        color: Colors.white.withOpacity(0.8),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                                        });
+                                      },
+                                      tooltip: _obscureConfirmPassword 
+                                          ? 'Afficher le mot de passe' 
+                                          : 'Masquer le mot de passe',
+                                    ),
                                     filled: false, // FOND TRANSPARENT
                                   ),
                                   validator: (value) { // Validation du champ
@@ -467,20 +506,27 @@ class _RegisterPageState extends State<RegisterPage> {
                               Row(
                                 children: [
                                   Checkbox(
-                                    value: true, // Toujours coché pour la démo
-                                    onChanged: (value) {
-                                      // Gestion de l'acceptation des conditions
+                                    value: _acceptTerms, // État de la case à cocher
+                                    tristate: false, // Explicitement définir que ce n'est pas tristate
+                                    onChanged: (bool? value) {
+                                      setState(() {
+                                        _acceptTerms = value ?? false;
+                                      });
                                     },
                                     fillColor: MaterialStateProperty.all(Colors.transparent), // Case transparente
-                                    side: BorderSide(color: Colors.white), // Bordure blanche
+                                    side: BorderSide(
+                                      color: _acceptTerms ? Colors.white : Colors.red, // Bordure rouge si non cochée
+                                      width: _acceptTerms ? 1.0 : 2.0, // Bordure plus épaisse si non cochée
+                                    ),
                                     checkColor: Colors.white, // Coches blanches
                                   ),
                                   Expanded(
                                     child: Text(
-                                      'J\'accepte les conditions d\'utilisation et la politique de confidentialité',
+                                      'J\'accepte les conditions d\'utilisation et la politique de confidentialité *',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Colors.white, // Texte en blanc
+                                        fontWeight: _acceptTerms ? FontWeight.normal : FontWeight.w500,
                                       ),
                                     ),
                                   ),
@@ -502,7 +548,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                     backgroundColor: Colors.transparent, // BOUTON TRANSPARENT
                                     foregroundColor: Color(0xFF2A7FDE), // Texte bleu
                                     shadowColor: Colors.transparent, // Pas d'ombre
-                                    padding: EdgeInsets.symmetric(vertical: 16), // Padding vertical de 16 pixels
+                                    padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30), // Padding amélioré
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8), // Coins arrondis
                                     ),
@@ -545,7 +591,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       style: TextStyle(
                                         color: Colors.white, // Texte en blanc
                                         fontWeight: FontWeight.w600,
-                                        decoration: TextDecoration.underline, // Soulignement
+                                        decoration: TextDecoration.none, // Pas de soulignement
                                       ),
                                     ),
                                   ),
@@ -565,6 +611,21 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Méthode pour gérer l'inscription d'un nouvel utilisateur
   void _register() async {
+    // Vérifier l'acceptation des conditions d'utilisation
+    if (!_acceptTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Vous devez accepter les conditions d\'utilisation pour continuer',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+    
     // Vérifier la validation du formulaire
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -633,7 +694,7 @@ class _RegisterPageState extends State<RegisterPage> {
         if (currentUser != null) {
           switch (currentUser.role) {
             case 'patient':
-              Navigator.pushReplacementNamed(context, '/home');
+              Navigator.pushReplacementNamed(context, '/patient-home');
               break;
             case 'center':
               Navigator.pushReplacementNamed(context, '/center/home');
@@ -642,10 +703,10 @@ class _RegisterPageState extends State<RegisterPage> {
               Navigator.pushReplacementNamed(context, '/admin/home');
               break;
             default:
-              Navigator.pushReplacementNamed(context, '/home');
+              Navigator.pushReplacementNamed(context, '/patient-home');
           }
         } else {
-          Navigator.pushReplacementNamed(context, '/home');
+          Navigator.pushReplacementNamed(context, '/patient-home');
         }
         
       } catch (e) {

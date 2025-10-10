@@ -32,7 +32,7 @@ class OnboardingScreen extends StatelessWidget {
             width: 250, // Largeur fixe
             fit: BoxFit.contain, // Adaptation de l'image
           ),
-          SizedBox(height: 40), // Espacement entre l'image et le titre
+          SizedBox(height: 20), // Espacement entre l'image et le titre
           
           // Titre de l'écran d'onboarding
           Text(
@@ -40,7 +40,7 @@ class OnboardingScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 24, // Taille de police
               fontWeight: FontWeight.bold, // Gras
-              color: Theme.of(context).primaryColor, // Couleur du thème
+              color: Color(0xFF26A69A), // Couleur du thème
             ),
             textAlign: TextAlign.center, // Centrage du texte
           ),

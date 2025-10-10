@@ -45,6 +45,10 @@ class FirebaseUserService implements UserService {
         'medicalHistory': user.medicalHistory,
         'emergencyContact': user.emergencyContact,
         'emailVerified': user.emailVerified,
+        // CHAMPS SPÉCIFIQUES AUX CENTRES
+        'specialties': user.specialties,
+        'description': user.description,
+        'openingHours': user.openingHours,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -125,12 +129,16 @@ class FirebaseUserService implements UserService {
         'dateOfBirth': user.dateOfBirth != null 
             ? Timestamp.fromDate(user.dateOfBirth!)
             : null,
-        // CHAMPS MÉDICAUX AJOUTÉS
+        // CHAMPS MÉDICAUX PATIENTS
         'bloodType': user.bloodType,
         'allergies': user.allergies,
         'emergencyContact': user.emergencyContact,
         'medicalHistory': user.medicalHistory,
         'profession': user.profession,
+        // CHAMPS SPÉCIFIQUES AUX CENTRES DE SANTÉ
+        'specialties': user.specialties,
+        'description': user.description,
+        'openingHours': user.openingHours,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
@@ -140,6 +148,7 @@ class FirebaseUserService implements UserService {
       await _firestore.collection('users').doc(user.id).update(updates);
 
       print('✅ FirebaseUserService: Profil mis à jour dans Firestore');
+      print('📝 Champs mis à jour: ${updates.keys.join(", ")}');
     } on FirebaseException catch (e) {
       print('❌ FirebaseUserService: Erreur Firestore - ${e.code}: ${e.message}');
       throw Exception('Erreur Firestore: ${e.code} - ${e.message}');

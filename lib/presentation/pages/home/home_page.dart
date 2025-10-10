@@ -25,12 +25,26 @@ class _HomePageState extends State<HomePage> {
   // Index courant du carrousel d'images
   int _currentCarouselIndex = 0;
   
-  // Liste des images du carrousel
-  // TODO: Remplacer par vos vraies images
-  final List<String> carouselImages = [
-    'assets/images/carousel1.jpg',
-    'assets/images/carousel2.jpg',
-    'assets/images/carousel3.jpg',
+  // Liste des données du carrousel (image, texte, bouton)
+  final List<Map<String, String>> carouselData = [
+    {
+      'image': 'assets/images/carousel1.png',
+      'text': 'Retrouvez la spécialité d\'urologie dans une clinique pas loin de chez vous',
+      'buttonText': 'Trouver un hôpital',
+      'route': '/hospitals',
+    },
+    {
+      'image': 'assets/images/carousel2.png',
+      'text': 'Retrouvez ici désormais toutes les pharmacies de garde proches de vous',
+      'buttonText': 'Trouver une pharmacie de garde',
+      'route': '/pharmacies',
+    },
+    {
+      'image': 'assets/images/carousel3.png',
+      'text': 'Obtenez instantanément le prix de vos médicaments sans vous déplacer',
+      'buttonText': 'Commencer',
+      'route': '/appointments',
+    },
   ];
 
   // Liste des services de l'application avec leurs informations
@@ -100,20 +114,14 @@ class _HomePageState extends State<HomePage> {
                     // Marge autour du carrousel
                     margin: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     
-                    // Hauteur fixe du carrousel (ajustée)
-                    height: 140,
-                    
-                    // Décoration : fond vert avec bordures arrondies
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Color(0xFF4CAF50), // Couleur verte
-                    ),
+                    // Hauteur fixe du carrousel (augmentée pour le contenu)
+                    height: 200,
                     
                     child: Stack(
                       children: [
                         // Widget CarouselSlider pour le diaporama
                         CarouselSlider(
-                          items: carouselImages.map((imagePath) {
+                          items: carouselData.isNotEmpty ? carouselData.map((carouselItem) {
                             return Container(
                               // Largeur maximale
                               width: double.infinity,
@@ -121,70 +129,122 @@ class _HomePageState extends State<HomePage> {
                               // Décoration du conteneur
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                color: Color(0xFF4CAF50),
                               ),
                               
                               child: ClipRRect(
                                 // Coins arrondis pour le contenu
                                 borderRadius: BorderRadius.circular(12),
                                 
-                                child: Column(
-                                  // Centrage vertical du contenu
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  
+                                child: Stack(
+                                  fit: StackFit.expand,
                                   children: [
-                                    // Icône placeholder pour les images (plus petite)
-                                    Icon(
+                                    // Image de fond
+                                    Image.asset(
+                                      carouselItem['image']!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        // Image de fallback si l'asset n'est pas trouvé
+                                        return Container(
+                                          color: Color(0xFF4CAF50),
+                                          child: Icon(
                                       Icons.image,
-                                      size: 35,
-                                      color: Colors.white.withOpacity(0.5),
+                                            color: Colors.white.withOpacity(0.7),
+                                            size: 50,
+                                          ),
+                                        );
+                                      },
                                     ),
                                     
-                                    // Espacement réduit
-                                    SizedBox(height: 6),
-                                    
-                                    // Texte promotionnel (plus petit)
-                                    Text(
-                                      'Retrouvez votre Clinique\nCitadelle du cœur, Parakou sur\ngoMediCAL',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1.2,
+                                    // Overlay sombre pour améliorer la lisibilité du texte
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.black.withOpacity(0.3),
+                                            Colors.black.withOpacity(0.5),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     
-                                    // Espacement réduit
-                                    SizedBox(height: 8),
-                                    
-                                    // Bouton d'action "Trouver un hôpital" (plus petit)
+                                    // Contenu : texte et bouton
+                                    Padding(
+                                      padding: EdgeInsets.only(left: 40, right: 40, top: 60, bottom: 20),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          // Colonne de gauche : texte et bouton
+                                          Expanded(
+                                            flex: 3,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                // Texte promotionnel sur deux lignes
+                                                Text(
+                                                  carouselItem['text']!,
+                                                  textAlign: TextAlign.start,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                    height: 1.3,
+                                                    shadows: [
+                                                      Shadow(
+                                                        offset: Offset(0, 1),
+                                                        blurRadius: 3.0,
+                                                        color: Colors.black.withOpacity(0.5),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                
+                                                // Espacement
+                                                SizedBox(height: 16),
+                                                
+                                                // Bouton d'action
                                     ElevatedButton(
                                       onPressed: () {
-                                        Navigator.pushNamed(context, '/hospitals');
+                                                    Navigator.pushNamed(context, carouselItem['route']!);
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white, // Fond blanc
-                                        foregroundColor: Color(0xFF4CAF50), // Texte vert
-                                        padding: EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+                                                    foregroundColor: Colors.black, // Texte noir
+                                                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(20), // Bouton arrondi
                                         ),
+                                                    elevation: 4,
                                       ),
                                       child: Text(
-                                        'Trouver un hôpital',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                                                    carouselItem['buttonText']!,
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 13,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          
+                                          // Espacement pour centrer le contenu
+                                          Expanded(flex: 2, child: SizedBox()),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             );
-                          }).toList(),
+                          }).toList() : [],
                           
                           // Options du carrousel
                           options: CarouselOptions(
-                            height: 140, // Hauteur ajustée
+                            height: 200, // Hauteur augmentée
                             autoPlay: true, // Lecture automatique
                             enlargeCenterPage: false, // Pas d'agrandissement
                             viewportFraction: 1.0, // Fraction de la vue
@@ -200,29 +260,26 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         
-                        // Flèche de navigation gauche
+                        // Indicateurs de points en bas
                         Positioned(
-                          left: 10,
-                          top: 0,
-                          bottom: 0,
-                          child: Center(
-                            child: CircleAvatar(
-                              backgroundColor: Colors.black.withOpacity(0.3), // Fond semi-transparent
-                              child: Icon(Icons.chevron_left, color: Colors.white), // Icône blanche
-                            ),
-                          ),
-                        ),
-                        
-                        // Flèche de navigation droite
-                        Positioned(
-                          right: 10,
-                          top: 0,
-                          bottom: 0,
-                          child: Center(
-                            child: CircleAvatar(
-                              backgroundColor: Colors.black.withOpacity(0.3), // Fond semi-transparent
-                              child: Icon(Icons.chevron_right, color: Colors.white), // Icône blanche
-                            ),
+                          bottom: 10,
+                          left: 0,
+                          right: 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: carouselData.isNotEmpty ? carouselData.asMap().entries.map((entry) {
+                              return Container(
+                                width: 8.0,
+                                height: 8.0,
+                                margin: EdgeInsets.symmetric(horizontal: 4.0),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _currentCarouselIndex == entry.key
+                                      ? Colors.white
+                                      : Colors.white.withOpacity(0.4),
+                                ),
+                              );
+                            }).toList() : [],
                           ),
                         ),
                       ],
@@ -234,8 +291,8 @@ class _HomePageState extends State<HomePage> {
                   
                   // Grille des services avec 2 colonnes
                   Padding(
-                    // Padding horizontal autour de la grille (réduit)
-                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    // Padding horizontal autour de la grille (augmenté pour compenser l'espacement)
+                    padding: EdgeInsets.symmetric(horizontal: 20),
                     
                     child: GridView.builder(
                       // Rétrécissement pour s'adapter au contenu
@@ -247,9 +304,9 @@ class _HomePageState extends State<HomePage> {
                       // Configuration de la grille
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2, // 2 colonnes
-                        crossAxisSpacing: 8, // Espacement horizontal réduit
-                        mainAxisSpacing: 8, // Espacement vertical réduit
-                        childAspectRatio: 1.4, // Ratio augmenté pour cartes plus plates
+                        crossAxisSpacing: 20, // Espacement horizontal augmenté
+                        mainAxisSpacing: 15, // Espacement vertical augmenté
+                        childAspectRatio: 1.8, // Ratio augmenté pour cartes plus plates et petites
                       ),
                       
                       // Nombre total d'éléments
@@ -289,8 +346,8 @@ class _HomePageState extends State<HomePage> {
               
               // Style du bouton
               style: ElevatedButton.styleFrom(
-                // Couleur de fond verte
-                backgroundColor: Color(0xFF4CAF50),
+                // Couleur de fond teal
+                backgroundColor: Color(0xFF26A69A),
                 
                 // Padding vertical pour la hauteur
                 padding: EdgeInsets.symmetric(vertical: 18),

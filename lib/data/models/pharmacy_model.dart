@@ -1,55 +1,67 @@
-// Import du package Hive
-import 'package:hive/hive.dart';
-
-// Partie générée par Hive
-part 'pharmacy_model.g.dart';
-
-// Annotation HiveType pour l'ID de type 4
-@HiveType(typeId: 4)
+/// Modèle de données pour une pharmacie
 class PharmacyModel {
-  // Champ ID pharmacie
-  @HiveField(0)
+  // Identifiant unique de la pharmacie
   final String id;
   
-  // Champ nom de la pharmacie
-  @HiveField(1)
+  // Nom de la pharmacie
   final String name;
   
-  // Champ adresse
-  @HiveField(2)
+  // Adresse complète
   final String address;
   
-  // Champ distance en kilomètres
-  @HiveField(3)
-  final double distance;
+  // Ville
+  final String city;
   
-  // Champ indicateur de garde
-  @HiveField(4)
+  // Latitude GPS
+  final double latitude;
+  
+  // Longitude GPS
+  final double longitude;
+  
+  // Distance en kilomètres (calculée depuis la position de l'utilisateur)
+  final double? distance;
+  
+  // Indicateur de garde (24h/24)
   final bool isOnDuty;
   
-  // Champ numéro de téléphone
-  @HiveField(5)
+  // Numéro de téléphone
   final String phone;
+  
+  // Horaires d'ouverture
+  final String? openingHours;
+  
+  // Email (optionnel)
+  final String? email;
 
   // Constructeur de PharmacyModel
   PharmacyModel({
     required this.id,
     required this.name,
     required this.address,
-    required this.distance,
+    required this.city,
+    required this.latitude,
+    required this.longitude,
+    this.distance,
     required this.isOnDuty,
     required this.phone,
+    this.openingHours,
+    this.email,
   });
 
   // Méthode fromJson
   factory PharmacyModel.fromJson(Map<String, dynamic> json) {
     return PharmacyModel(
-      id: json['id'],
-      name: json['name'],
-      address: json['address'],
-      distance: json['distance'],
-      isOnDuty: json['isOnDuty'],
-      phone: json['phone'],
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      address: json['address'] ?? '',
+      city: json['city'] ?? '',
+      latitude: (json['latitude'] ?? 0.0).toDouble(),
+      longitude: (json['longitude'] ?? 0.0).toDouble(),
+      distance: json['distance']?.toDouble(),
+      isOnDuty: json['isOnDuty'] ?? false,
+      phone: json['phone'] ?? '',
+      openingHours: json['openingHours'],
+      email: json['email'],
     );
   }
 
@@ -59,9 +71,31 @@ class PharmacyModel {
       'id': id,
       'name': name,
       'address': address,
+      'city': city,
+      'latitude': latitude,
+      'longitude': longitude,
       'distance': distance,
       'isOnDuty': isOnDuty,
       'phone': phone,
+      'openingHours': openingHours,
+      'email': email,
     };
+  }
+  
+  // Méthode pour créer une copie avec une distance calculée
+  PharmacyModel copyWith({double? distance}) {
+    return PharmacyModel(
+      id: id,
+      name: name,
+      address: address,
+      city: city,
+      latitude: latitude,
+      longitude: longitude,
+      distance: distance ?? this.distance,
+      isOnDuty: isOnDuty,
+      phone: phone,
+      openingHours: openingHours,
+      email: email,
+    );
   }
 }

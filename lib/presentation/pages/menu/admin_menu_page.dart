@@ -225,7 +225,7 @@ class AdminMenuPage extends StatelessWidget {
                     title: 'Mon profil',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, '/profile');
+                      Navigator.pushNamed(context, '/admin/profile');
                     },
                   ),
 

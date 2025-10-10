@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Pour la configuration de l'orientation
 import 'package:flutter/foundation.dart' show kIsWeb; // 👈 pour tester le Web
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // Import des packages de gestion d'état
 import 'package:provider/provider.dart';
@@ -43,19 +46,27 @@ import 'presentation/pages/profile/medical_constants_page.dart';
 import 'presentation/pages/profile/insurance_detail_page.dart';
 import 'presentation/pages/health_record/health_record_page.dart';
 
+// Import des widgets de garde d'authentification
+import 'presentation/widgets/auth_guard.dart';
+import 'presentation/widgets/auth_wrapper.dart';
+import 'presentation/widgets/role_based_home.dart';
+
+
 // Import des pages Centre de santé
 import 'presentation/pages/center/center_home_page.dart';
+import 'presentation/pages/center/center_profile_page.dart';
 import 'presentation/pages/center/add_consultation_page.dart';
+import 'presentation/pages/center/consultations_history_page.dart';
 import 'presentation/pages/center/patients_list_page.dart';
 import 'presentation/pages/center/patient_history_page.dart';
 import 'presentation/pages/center/center_appointments_page.dart';
 
 // Import des pages Administrateur
 import 'presentation/pages/admin/admin_home_page.dart';
+import 'presentation/pages/admin/admin_profile_page.dart';
 import 'presentation/pages/admin/create_user_page.dart';
 import 'presentation/pages/admin/users_list_page.dart';
-//import 'presentation/pages/insurances/insurances_page.dart';
-//import 'presentation/pages/directory/directory_page.dart';
+import 'presentation/pages/directory/directory_page.dart';
 
 // Fonction principale asynchrone qui lance l'application
 void main() async {
@@ -80,10 +91,13 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-     // ⚠️ N’exécuter que sur plateformes non-Web
+     // ⚠️ N'exécuter que sur plateformes non-Web
     if (!kIsWeb) {
       await LocalStorageService.init(); // Initialisation des services de stockage local
     }
+    
+    // Initialisation des locales pour les dates
+    await initializeDateFormatting('fr_FR', null);
 
     // Initialisation des services Firebase
     final FirebaseAuthService authService = FirebaseAuthService();
@@ -142,64 +156,94 @@ class VitaliaApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        // Configuration de l'application
-        title: 'VITALIA - Carnet de Santé', // Titre de l'application
-        debugShowCheckedModeBanner: false, // Masquer la bannière de debug
-        theme: _buildAppTheme(), // Thème personnalisé
-        darkTheme: _buildDarkTheme(), // Thème sombre
-        themeMode: ThemeMode.light, // Utiliser le thème light par défaut
-        initialRoute: '/onboarding', // Route initiale au lancement
+            // Configuration de l'application
+            title: 'VITALIA - Carnet de Santé', // Titre de l'application
+            debugShowCheckedModeBanner: false, // Masquer la bannière de debug
+            theme: _buildAppTheme(), // Thème personnalisé
+            darkTheme: _buildDarkTheme(), // Thème sombre
+            themeMode: ThemeMode.light, // Utiliser le thème light par défaut
+            initialRoute: '/onboarding', // Route initiale au lancement
+            
+            // Configuration des localisations
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: [
+              Locale('fr', 'FR'),
+            ],
 
         // Définition de toutes les routes de l'application
         routes: {
-          // Routes d'authentification et onboarding
-          '/onboarding': (context) => const OnboardingPage(),
-          '/auth': (context) => const LoginPage(),
-          '/login': (context) => const LoginPage(),
-          '/register': (context) => const RegisterPage(),
+          // Routes d'authentification et onboarding (publiques)
+          '/onboarding': (context) => const PublicGuard(child: OnboardingPage()),
+          '/auth': (context) => const PublicGuard(child: LoginPage()),
+          '/login': (context) => const PublicGuard(child: LoginPage()),
+          '/register': (context) => const PublicGuard(child: RegisterPage()),
 
-          // Page principale
-          '/home': (context) => const HomePage(),
+          // Page principale (redirection selon le rôle)
+          '/home': (context) => const AuthGuard(child: RoleBasedHome()),
+          
+          // Page d'accueil spécifique aux patients
+          '/patient-home': (context) => const AuthGuard(child: HomePage()),
 
-          // Menu et navigation
-          '/menu': (context) => const MenuPage(),
+          // Menu et navigation (protégé)
+          '/menu': (context) => const AuthGuard(child: MenuPage()),
 
-          // Services de santé
-          '/hospitals': (context) => const HospitalsPage(),
-          '/pharmacies': (context) => const PharmaciesPage(),
+          // Services de santé (protégés)
+          '/hospitals': (context) => const AuthGuard(child: HospitalsPage()),
+          '/pharmacies': (context) => const AuthGuard(child: PharmaciesPage()),
 
-          // Gestion des rendez-vous
-          '/appointments': (context) => const AppointmentsPage(),
-          '/book-appointment': (context) => const BookAppointmentPage(),
+          // Gestion des rendez-vous (protégés)
+          '/appointments': (context) => const AuthGuard(child: AppointmentsPage()),
+          // '/book-appointment' est gérée dans onGenerateRoute pour passer les arguments
 
-          // Profil utilisateur
-          '/profile': (context) => const ProfilePage(),
-          '/profile/personal-info': (context) => const PersonalInfoPage(),
-          '/profile/medical-constants': (context) => const MedicalConstantsPage(),
-          '/profile/insurances': (context) => const InsuranceDetailPage(),
+          // Profil utilisateur (protégés)
+          '/profile': (context) => const AuthGuard(child: ProfilePage()),
+          '/profile/personal-info': (context) => const AuthGuard(child: PersonalInfoPage()),
+          '/profile/medical-constants': (context) => const AuthGuard(child: MedicalConstantsPage()),
+          '/profile/insurances': (context) => const AuthGuard(child: InsuranceDetailPage()),
 
-          // Carnet de santé
-          '/health-record': (context) => const HealthRecordPage(),
+          // Carnet de santé (protégé)
+          '/health-record': (context) => const AuthGuard(child: HealthRecordPage()),
 
-          // Pages supplémentaires
-          //'/directory': (context) => const DirectoryPage(),
-          '/insurances': (context) => const InsurancesPage(),
+          // Pages supplémentaires (protégées)
+          '/directory': (context) => const AuthGuard(child: DirectoryPage()),
+          '/insurances': (context) => const AuthGuard(child: InsurancesPage()),
 
-          // Routes Centre de santé
-          '/center/home': (context) => const CenterHomePage(),
-          '/center/add-consultation': (context) => const AddConsultationPage(),
-          '/center/patients': (context) => const PatientsListPage(),
-          '/center/appointments': (context) => const CenterAppointmentsPage(),
 
-          // Routes Administrateur
-          '/admin/home': (context) => const AdminHomePage(),
-          '/admin/users': (context) => const UsersListPage(),
-          '/admin/create-center': (context) => const CreateUserPage(userType: 'center'),
-          '/admin/create-patient': (context) => const CreateUserPage(userType: 'patient'),
+          // Routes Centre de santé (protégées)
+          '/center/home': (context) => const AuthGuard(child: CenterHomePage()),
+          '/center/profile': (context) => const AuthGuard(child: CenterProfilePage()),
+          '/center/add-consultation': (context) => const AuthGuard(child: AddConsultationPage()),
+          '/center/consultations': (context) => const AuthGuard(child: ConsultationsHistoryPage()),
+          '/center/patients': (context) => const AuthGuard(child: PatientsListPage()),
+          '/center/appointments': (context) => const AuthGuard(child: CenterAppointmentsPage()),
+
+          // Routes Administrateur (protégées)
+          '/admin/home': (context) => const AuthGuard(child: AdminHomePage()),
+          '/admin/profile': (context) => const AuthGuard(child: AdminProfilePage()),
+          '/admin/users': (context) => const AuthGuard(child: UsersListPage()),
+          '/admin/create-center': (context) => const AuthGuard(child: CreateUserPage(userType: 'center')),
+          '/admin/create-patient': (context) => const AuthGuard(child: CreateUserPage(userType: 'patient')),
         },
 
-        // Gestion des routes inconnues (404)
+        // Gestion des routes inconnues (404) et routes dynamiques
         onGenerateRoute: (settings) {
+          // Gestion de la route /book-appointment avec arguments (protégée)
+          if (settings.name == '/book-appointment') {
+            final doctor = settings.arguments;
+            return MaterialPageRoute(
+              builder: (context) => AuthGuard(
+                child: BookAppointmentPage(
+                  selectedDoctor: doctor as dynamic,
+                ),
+              ),
+            );
+          }
+          
+          // Page 404 pour les routes non trouvées
           return MaterialPageRoute(
             builder: (context) => Scaffold(
               appBar: AppBar(title: const Text('Page non trouvée')),
@@ -216,7 +260,7 @@ class VitaliaApp extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
-                      onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+                      onPressed: () => Navigator.pushReplacementNamed(context, '/patient-home'),
                       child: const Text('Retour à l\'accueil'),
                     ),
                   ],
@@ -228,11 +272,13 @@ class VitaliaApp extends StatelessWidget {
 
         // Gestion des erreurs de construction
         builder: (context, child) {
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaleFactor: 1.0, // Désactiver le scaling automatique du texte
+          return AuthWrapper(
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaleFactor: 1.0, // Désactiver le scaling automatique du texte
+              ),
+              child: child!,
             ),
-            child: child!,
           );
         },
       ),
@@ -251,28 +297,29 @@ class VitaliaApp extends StatelessWidget {
         backgroundColor: Colors.white,
       ),
 
-      // Typographie
-      fontFamily: 'Roboto',
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-        displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        bodyLarge: TextStyle(fontSize: 16),
-        bodyMedium: TextStyle(fontSize: 14),
-        bodySmall: TextStyle(fontSize: 12),
+      // Typographie avec Google Fonts
+      textTheme: GoogleFonts.robotoTextTheme(
+        const TextTheme(
+          displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+          displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          bodyLarge: TextStyle(fontSize: 16),
+          bodyMedium: TextStyle(fontSize: 14),
+          bodySmall: TextStyle(fontSize: 12),
+        ),
       ),
 
       // AppBar theme
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 1,
         centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.black),
-        titleTextStyle: TextStyle(
+        iconTheme: const IconThemeData(color: Colors.black),
+        titleTextStyle: GoogleFonts.roboto(
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Colors.black,
@@ -308,7 +355,7 @@ class VitaliaApp extends StatelessWidget {
           backgroundColor: const Color(0xFF2A7FDE),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.w600),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           elevation: 2,
         ),
@@ -334,9 +381,15 @@ class VitaliaApp extends StatelessWidget {
         primary: const Color(0xFF2A7FDE),
         secondary: const Color(0xFF4CAF50),
       ),
-      appBarTheme: const AppBarTheme(
+      textTheme: GoogleFonts.robotoTextTheme(ThemeData.dark().textTheme),
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.black87,
         foregroundColor: Colors.white,
+        titleTextStyle: GoogleFonts.roboto(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
         elevation: 1,
       ),
       inputDecorationTheme: InputDecorationTheme(

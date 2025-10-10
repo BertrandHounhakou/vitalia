@@ -16,6 +16,7 @@ class AuthProvider with ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isAuthenticated => _currentUser != null;
 
   // Inscription avec gestion d'erreur améliorée
   Future<void> signUp(UserModel user, String password) async {
@@ -195,6 +196,41 @@ class AuthProvider with ChangeNotifier {
       }
     } catch (e) {
       print('❌ AuthProvider: Erreur rechargement utilisateur: $e');
+    }
+  }
+
+  // Initialiser l'état d'authentification au démarrage
+  Future<void> initializeAuth() async {
+    print('🔄 AuthProvider: Initialisation de l\'authentification...');
+    
+    // Ne pas changer l'état de chargement si déjà en cours
+    if (!_isLoading) {
+      _isLoading = true;
+      notifyListeners();
+    }
+
+    try {
+      if (_authService.isLoggedIn) {
+        try {
+          _currentUser = await _authService.getCurrentUser();
+          print('✅ AuthProvider: Utilisateur récupéré: ${_currentUser?.email} (${_currentUser?.role})');
+        } catch (e) {
+          print('❌ AuthProvider: Erreur récupération utilisateur: $e');
+          // Si l'utilisateur Firebase existe mais pas dans Firestore, déconnecter
+          await _authService.signOut();
+          _currentUser = null;
+        }
+      } else {
+        _currentUser = null;
+        print('📝 AuthProvider: Aucun utilisateur connecté');
+      }
+    } catch (e) {
+      print('❌ AuthProvider: Erreur initialisation auth: $e');
+      _currentUser = null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+      print('✅ AuthProvider: Initialisation terminée - Authentifié: ${_currentUser != null}');
     }
   }
 }

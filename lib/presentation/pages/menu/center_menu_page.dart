@@ -218,7 +218,7 @@ class CenterMenuPage extends StatelessWidget {
                     title: 'Profil du centre',
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, '/profile');
+                      Navigator.pushNamed(context, '/center/profile');
                     },
                   ),
 

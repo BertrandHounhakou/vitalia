@@ -4,9 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:vitalia/presentation/providers/auth_provider.dart';
 import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
 import 'package:vitalia/presentation/pages/menu/admin_menu_page.dart';
+import 'package:vitalia/core/services/firebase_user_service.dart';
+import 'package:vitalia/core/services/consultation_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Page d'accueil pour l'Administrateur
-/// Dashboard affichant les statistiques et la gestion des utilisateurs
+/// Dashboard affichant les statistiques réelles depuis Firestore
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({Key? key}) : super(key: key);
 
@@ -15,13 +18,87 @@ class AdminHomePage extends StatefulWidget {
 }
 
 class _AdminHomePageState extends State<AdminHomePage> {
-  // Statistiques globales (simulées - à remplacer par des données Firebase)
-  final Map<String, int> _stats = {
-    'totalPatients': 1245,
-    'totalCenters': 38,
-    'totalConsultations': 5678,
-    'activeToday': 142,
+  // Services
+  final FirebaseUserService _userService = FirebaseUserService();
+  final ConsultationService _consultationService = ConsultationService();
+  
+  // Statistiques globales (chargées depuis Firestore)
+  Map<String, int> _stats = {
+    'totalPatients': 0,
+    'totalCenters': 0,
+    'totalConsultations': 0,
+    'activeToday': 0,
   };
+  
+  // Indicateur de chargement
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatistics();
+  }
+
+  /// Charger les statistiques globales depuis Firestore
+  Future<void> _loadStatistics() async {
+    try {
+      print('📊 Admin: Chargement des statistiques globales...');
+
+      // Charger tous les utilisateurs
+      final allUsers = await _userService.getUsers();
+
+      // Compter par rôle
+      final totalPatients = allUsers.where((u) => u.role == 'patient').length;
+      final totalCenters = allUsers.where((u) => u.role == 'center').length;
+
+      // Compter toutes les consultations
+      final consultationsSnapshot = await FirebaseFirestore.instance
+          .collection('consultations')
+          .get();
+      final totalConsultations = consultationsSnapshot.docs.length;
+
+      // Compter les activités aujourd'hui (consultations + rendez-vous)
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      
+      final todayConsultations = consultationsSnapshot.docs.where((doc) {
+        final data = doc.data();
+        final dateTime = (data['dateTime'] as Timestamp).toDate();
+        final cDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+        return cDate.isAtSameMomentAs(today);
+      }).length;
+
+      final appointmentsSnapshot = await FirebaseFirestore.instance
+          .collection('appointments')
+          .get();
+      
+      final todayAppointments = appointmentsSnapshot.docs.where((doc) {
+        final data = doc.data();
+        final dateTime = (data['dateTime'] as Timestamp).toDate();
+        final aDate = DateTime(dateTime.year, dateTime.month, dateTime.day);
+        return aDate.isAtSameMomentAs(today);
+      }).length;
+
+      final activeToday = todayConsultations + todayAppointments;
+
+      setState(() {
+        _stats = {
+          'totalPatients': totalPatients,
+          'totalCenters': totalCenters,
+          'totalConsultations': totalConsultations,
+          'activeToday': activeToday,
+        };
+        _isLoading = false;
+      });
+
+      print('✅ Admin: Statistiques chargées: $_stats');
+    } catch (e) {
+      print('❌ Admin: Erreur chargement statistiques: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,30 +116,54 @@ class _AdminHomePageState extends State<AdminHomePage> {
       // Menu latéral personnalisé pour Administrateur
       drawer: AdminMenuPage(),
 
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Titre de bienvenue
-            Text(
-              'Bienvenue, $adminName',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF26A69A)),
               ),
-            ),
-
-            SizedBox(height: 8),
-
-            Text(
-              'Tableau de bord administrateur',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadStatistics,
+              child: SingleChildScrollView(
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Titre de bienvenue
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Bienvenue, $adminName',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Statistiques en temps réel',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.refresh, color: Color(0xFF26A69A)),
+                          onPressed: _loadStatistics,
+                          tooltip: 'Actualiser',
+                        ),
+                      ],
+                    ),
 
             SizedBox(height: 24),
 
@@ -75,7 +176,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
               mainAxisSpacing: 12,
               childAspectRatio: 1.2,
               children: [
-                // Total patients
+                // Total patients (DONNÉES RÉELLES)
                 _buildStatCard(
                   title: 'Patients',
                   subtitle: 'Total inscrits',
@@ -84,7 +185,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   color: Colors.blue,
                 ),
 
-                // Total centres
+                // Total centres (DONNÉES RÉELLES)
                 _buildStatCard(
                   title: 'Centres',
                   subtitle: 'Centres de santé',
@@ -93,7 +194,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   color: Colors.green,
                 ),
 
-                // Total consultations
+                // Total consultations (DONNÉES RÉELLES)
                 _buildStatCard(
                   title: 'Consultations',
                   subtitle: 'Total',
@@ -102,7 +203,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   color: Colors.orange,
                 ),
 
-                // Actifs aujourd'hui
+                // Actifs aujourd'hui (DONNÉES RÉELLES)
                 _buildStatCard(
                   title: 'Aujourd\'hui',
                   subtitle: 'Activités',
@@ -133,7 +234,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
               subtitle: 'Ajouter un nouveau centre médical',
               icon: Icons.add_business,
               color: Color(0xFF2A9D8F),
-              onTap: () => Navigator.pushNamed(context, '/admin/create-center'),
+              onTap: () async {
+                await Navigator.pushNamed(context, '/admin/create-center');
+                // Recharger les statistiques après création
+                _loadStatistics();
+              },
             ),
 
             SizedBox(height: 12),
@@ -144,7 +249,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
               subtitle: 'Enregistrer un nouveau patient',
               icon: Icons.person_add,
               color: Color(0xFF1E88E5),
-              onTap: () => Navigator.pushNamed(context, '/admin/create-patient'),
+              onTap: () async {
+                await Navigator.pushNamed(context, '/admin/create-patient');
+                // Recharger les statistiques après création
+                _loadStatistics();
+              },
             ),
 
             SizedBox(height: 12),
@@ -155,7 +264,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
               subtitle: 'Voir et gérer tous les comptes',
               icon: Icons.list,
               color: Color(0xFF4CAF50),
-              onTap: () => Navigator.pushNamed(context, '/admin/users'),
+              onTap: () async {
+                await Navigator.pushNamed(context, '/admin/users');
+                // Recharger les statistiques après gestion
+                _loadStatistics();
+              },
             ),
 
             SizedBox(height: 12),
@@ -173,8 +286,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
               },
             ),
           ],
-        ),
-      ),
+                ),
+              ),
+            ),
     );
   }
 

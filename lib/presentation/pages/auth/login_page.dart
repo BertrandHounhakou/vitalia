@@ -16,6 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   String _errorMessage = '';
+  bool _obscurePassword = true; // État pour masquer/afficher le mot de passe
 
   @override
   Widget build(BuildContext context) {
@@ -158,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
                                 child: TextFormField(
                                   controller: _passwordController,
                                   style: TextStyle(color: Colors.white),
-                                  obscureText: true,
+                                  obscureText: _obscurePassword,
                                   decoration: InputDecoration(
                                     labelText: 'Mot de passe',
                                     labelStyle: TextStyle(color: Colors.white),
@@ -166,7 +167,22 @@ class _LoginPageState extends State<LoginPage> {
                                     enabledBorder: InputBorder.none,
                                     focusedBorder: InputBorder.none,
                                     prefixIcon: Icon(Icons.lock, color: Colors.white),
-                                    suffixIcon: Icon(Icons.visibility_off, color: Colors.white),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword 
+                                            ? Icons.visibility_off 
+                                            : Icons.visibility,
+                                        color: Colors.white.withOpacity(0.8),
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
+                                      },
+                                      tooltip: _obscurePassword 
+                                          ? 'Afficher le mot de passe' 
+                                          : 'Masquer le mot de passe',
+                                    ),
                                     filled: false,
                                   ),
                                 ),
@@ -181,7 +197,7 @@ class _LoginPageState extends State<LoginPage> {
                                     'Mot de passe oublié ?',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      decoration: TextDecoration.underline,
+                                      decoration: TextDecoration.none,
                                     ),
                                   ),
                                 ),
@@ -202,7 +218,7 @@ class _LoginPageState extends State<LoginPage> {
                                     backgroundColor: Colors.transparent,
                                     foregroundColor: Color(0xFF2A7FDE),
                                     shadowColor: Colors.transparent,
-                                    padding: EdgeInsets.symmetric(vertical: 15),
+                                    padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -244,7 +260,7 @@ class _LoginPageState extends State<LoginPage> {
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
-                                        decoration: TextDecoration.underline,
+                                        decoration: TextDecoration.none,
                                       ),
                                     ),
                                   ),
@@ -289,17 +305,17 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      // Utilisation du AuthProvider existant - CORRECTION ICI
+      // Utilisation du AuthProvider existant
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signIn(email, password);
       
       // Navigation selon le rôle de l'utilisateur
       final user = authProvider.currentUser;
       
-      if (user != null) {
+      if (user != null && mounted) {
         switch (user.role) {
           case 'patient':
-            Navigator.pushReplacementNamed(context, '/home');
+            Navigator.pushReplacementNamed(context, '/patient-home');
             break;
           case 'center':
             Navigator.pushReplacementNamed(context, '/center/home');
@@ -308,20 +324,26 @@ class _LoginPageState extends State<LoginPage> {
             Navigator.pushReplacementNamed(context, '/admin/home');
             break;
           default:
-            Navigator.pushReplacementNamed(context, '/home');
+            Navigator.pushReplacementNamed(context, '/patient-home');
         }
-      } else {
-        Navigator.pushReplacementNamed(context, '/home');
+      } else if (mounted) {
+        Navigator.pushReplacementNamed(context, '/patient-home');
       }
       
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      // Vérifier que le widget est toujours monté avant setState
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // Vérifier que le widget est toujours monté avant setState
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

@@ -33,15 +33,19 @@ class ConsultationService {
     try {
       print('🔍 ConsultationService: Récupération consultations patient $patientId');
       
+      // Requête simplifiée sans orderBy pour éviter le besoin d'index
       final querySnapshot = await _firestore
           .collection(_collectionName)
           .where('patientId', isEqualTo: patientId)
-          .orderBy('dateTime', descending: true)
           .get();
       
+      // Tri côté client (du plus récent au plus ancien)
       final consultations = querySnapshot.docs
           .map((doc) => ConsultationModel.fromFirestore(doc))
           .toList();
+      
+      // Trier par date décroissante
+      consultations.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       
       print('✅ ConsultationService: ${consultations.length} consultations trouvées');
       return consultations;
@@ -56,15 +60,19 @@ class ConsultationService {
     try {
       print('🔍 ConsultationService: Récupération consultations centre $centerId');
       
+      // Requête simplifiée sans orderBy pour éviter le besoin d'index
       final querySnapshot = await _firestore
           .collection(_collectionName)
           .where('centerId', isEqualTo: centerId)
-          .orderBy('dateTime', descending: true)
           .get();
       
+      // Tri côté client (du plus récent au plus ancien)
       final consultations = querySnapshot.docs
           .map((doc) => ConsultationModel.fromFirestore(doc))
           .toList();
+      
+      // Trier par date décroissante
+      consultations.sort((a, b) => b.dateTime.compareTo(a.dateTime));
       
       print('✅ ConsultationService: ${consultations.length} consultations trouvées');
       return consultations;

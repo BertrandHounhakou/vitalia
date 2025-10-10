@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vitalia/data/models/appointment_model.dart';
 import 'package:vitalia/presentation/providers/appointment_provider.dart';
+import 'package:vitalia/presentation/providers/auth_provider.dart';
 import 'package:vitalia/presentation/widgets/appointment_card.dart';
 import 'package:vitalia/presentation/pages/menu/menu_page.dart';
 import 'package:vitalia/presentation/widgets/custom_app_bar.dart';
@@ -36,11 +37,19 @@ class _AppointmentsPageState extends State<AppointmentsPage> with SingleTickerPr
     _loadAppointments();
   }
 
-  // Méthode pour charger les rendez-vous
+  // Méthode pour charger les rendez-vous du patient connecté
   Future<void> _loadAppointments() async {
-    final appointmentProvider = Provider.of<AppointmentProvider>(context, listen: false);
-    // Simulation - À remplacer par le vrai chargement
-    await appointmentProvider.loadCenterAppointments('current_center_id');
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final appointmentProvider = Provider.of<AppointmentProvider>(context, listen: false);
+      
+      final patientId = authProvider.currentUser?.id;
+      if (patientId != null) {
+        await appointmentProvider.loadPatientAppointments(patientId);
+      }
+    } catch (e) {
+      print('Erreur lors du chargement des rendez-vous: $e');
+    }
   }
 
   // Construction de l'interface de la page des rendez-vous
@@ -99,11 +108,14 @@ class _AppointmentsPageState extends State<AppointmentsPage> with SingleTickerPr
         ],
       ),
       floatingActionButton: FloatingActionButton( // Bouton flottant d'ajout
-        onPressed: () {
-          Navigator.push( // Navigation vers la page de prise de RDV
+        onPressed: () async {
+          // Navigation vers la page de prise de RDV
+          await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => BookAppointmentPage()),
           );
+          // Recharger les rendez-vous après retour
+          _loadAppointments();
         },
         child: Icon(Icons.add), // Icône d'ajout
         tooltip: 'Prendre un rendez-vous', // Info-bulle
@@ -139,11 +151,14 @@ class _AppointmentsPageState extends State<AppointmentsPage> with SingleTickerPr
             ),
             SizedBox(height: 16), // Espacement
             ElevatedButton(
-              onPressed: () {
-                Navigator.push( // Navigation vers la prise de RDV
+              onPressed: () async {
+                // Navigation vers la prise de RDV
+                await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => BookAppointmentPage()),
                 );
+                // Recharger les rendez-vous après retour
+                _loadAppointments();
               },
               child: Text('Prendre un rendez-vous'), // Texte du bouton
             ),
